@@ -1,0 +1,15 @@
+ALTER TABLE public.os_escaneadas
+  ADD COLUMN equipamento TEXT,
+  ADD COLUMN horimetro NUMERIC,
+  ADD COLUMN area TEXT,
+  ADD COLUMN responsavel TEXT,
+  ADD COLUMN data_inicio DATE,
+  ADD COLUMN hora_inicio TIME,
+  ADD COLUMN data_conclusao DATE,
+  ADD COLUMN hora_conclusao TIME,
+  ADD COLUMN manutencao_tipo TEXT,
+  ADD COLUMN setor TEXT,
+  ADD COLUMN observacoes TEXT,
+  ADD COLUMN texto_extraido TEXT,
+  ADD COLUMN confianca_leitura NUMERIC,
+  ADD COLUMN revisado BOOLEAN DEFAULT false;

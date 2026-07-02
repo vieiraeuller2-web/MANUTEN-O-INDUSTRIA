@@ -1,0 +1,7 @@
+project_id = "ywitcnoutzpmrvavpizk"
+
+[functions.sheets-proxy]
+verify_jwt = false
+
+[functions.webhook-proxy]
+verify_jwt = false
