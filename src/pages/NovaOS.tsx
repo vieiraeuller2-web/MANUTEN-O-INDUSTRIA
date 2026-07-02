@@ -76,7 +76,21 @@ function buildDescricao(form: FormData) {
   return blocos.map(([label, value]) => `${label}: ${value}`).join("\n\n");
 }
 
-function validate(form: FormData): FormErrors {
+interface SelectOptions {
+  equipamentos: string[];
+  setores: string[];
+  areas: string[];
+  responsaveis: string[];
+  tipos: string[];
+}
+
+function isListedValue(value: string, list: string[]) {
+  const text = safeString(value);
+  if (!text) return true;
+  return list.includes(text);
+}
+
+function validate(form: FormData, options: SelectOptions): FormErrors {
   const errors: FormErrors = {};
   const required: FormField[] = ["equipamento", "responsavel", "tipo", "data_inicio", "hora_inicio", "hora_fim", "descricao"];
 
@@ -86,6 +100,22 @@ function validate(form: FormData): FormErrors {
 
   if (form.horimetro && Number.isNaN(Number(form.horimetro))) {
     errors.horimetro = "Informe um número válido";
+  }
+
+  if (!isListedValue(form.equipamento, options.equipamentos)) {
+    errors.equipamento = "Selecione um equipamento da lista";
+  }
+  if (!isListedValue(form.setor, options.setores)) {
+    errors.setor = "Selecione um setor da lista";
+  }
+  if (!isListedValue(form.area, options.areas)) {
+    errors.area = "Selecione uma área da lista";
+  }
+  if (!isListedValue(form.responsavel, options.responsaveis)) {
+    errors.responsavel = "Selecione um responsável da lista";
+  }
+  if (!isListedValue(form.tipo, options.tipos)) {
+    errors.tipo = "Selecione um tipo da lista";
   }
 
   const dataFim = form.data_fim || form.data_inicio;
@@ -104,7 +134,6 @@ interface TextFieldProps {
   onChange: (field: FormField, value: string) => void;
   type?: string;
   required?: boolean;
-  list?: string;
   inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];
 }
 
@@ -116,7 +145,6 @@ const TextField = memo(function TextField({
   onChange,
   type = "text",
   required,
-  list,
   inputMode,
 }: TextFieldProps) {
   const handleChange = useCallback(
@@ -135,11 +163,62 @@ const TextField = memo(function TextField({
         type={type}
         value={value}
         onChange={handleChange}
-        list={list}
         inputMode={inputMode}
         className={error ? "border-destructive ring-1 ring-destructive/30" : "border-l-2 border-l-primary/40"}
         aria-invalid={!!error}
       />
+      {error && <FieldError message={error} />}
+    </div>
+  );
+});
+
+interface LockedSelectFieldProps {
+  label: string;
+  field: FormField;
+  value: string;
+  options: string[];
+  error?: string;
+  onChange: (field: FormField, value: string) => void;
+  required?: boolean;
+  placeholder?: string;
+}
+
+const LockedSelectField = memo(function LockedSelectField({
+  label,
+  field,
+  value,
+  options,
+  error,
+  onChange,
+  required,
+  placeholder = "Selecione",
+}: LockedSelectFieldProps) {
+  const hasOptions = options.length > 0;
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs font-medium text-muted-foreground">
+        {label} {required && <span className="text-destructive">*</span>}
+      </Label>
+      <Select
+        value={value}
+        onValueChange={(selected) => onChange(field, selected)}
+        disabled={!hasOptions}
+      >
+        <SelectTrigger
+          className={error ? "border-destructive ring-1 ring-destructive/30" : "border-l-2 border-l-primary/40"}
+          aria-invalid={!!error}
+        >
+          <SelectValue placeholder={hasOptions ? placeholder : "Nenhuma opção disponível"} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       {error && <FieldError message={error} />}
     </div>
   );
@@ -193,17 +272,6 @@ function FieldError({ message }: { message: string }) {
     <p className="text-xs text-destructive flex items-center gap-1">
       <AlertCircle className="h-3 w-3" /> {message}
     </p>
-  );
-}
-
-function OptionsList({ id, values }: { id: string; values: string[] }) {
-  if (!values.length) return null;
-  return (
-    <datalist id={id}>
-      {values.slice(0, 200).map((value) => (
-        <option key={value} value={value} />
-      ))}
-    </datalist>
   );
 }
 
@@ -288,12 +356,12 @@ export default function NovaOS() {
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      const nextErrors = validate(form);
+      const nextErrors = validate(form, options);
       setErrors(nextErrors);
       if (Object.keys(nextErrors).length > 0 || mutation.isPending) return;
       mutation.mutate();
     },
-    [form, mutation],
+    [form, mutation, options],
   );
 
   return (
@@ -317,14 +385,14 @@ export default function NovaOS() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="stat-card space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <TextField
+            <LockedSelectField
               label="Equipamento / TAG"
               field="equipamento"
               value={form.equipamento}
+              options={options.equipamentos}
               error={errors.equipamento}
               onChange={setField}
               required
-              list="os-equipamentos"
             />
             <TextField
               label="Horímetro"
@@ -338,19 +406,33 @@ export default function NovaOS() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <TextField label="Setor" field="setor" value={form.setor} error={errors.setor} onChange={setField} list="os-setores" />
-            <TextField label="Área" field="area" value={form.area} error={errors.area} onChange={setField} list="os-areas" />
+            <LockedSelectField
+              label="Setor"
+              field="setor"
+              value={form.setor}
+              options={options.setores}
+              error={errors.setor}
+              onChange={setField}
+            />
+            <LockedSelectField
+              label="Área"
+              field="area"
+              value={form.area}
+              options={options.areas}
+              error={errors.area}
+              onChange={setField}
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <TextField
+            <LockedSelectField
               label="Responsável"
               field="responsavel"
               value={form.responsavel}
+              options={options.responsaveis}
               error={errors.responsavel}
               onChange={setField}
               required
-              list="os-responsaveis"
             />
             <div className="space-y-1">
               <Label className="text-xs font-medium text-muted-foreground">
@@ -436,10 +518,6 @@ export default function NovaOS() {
         </div>
       </form>
 
-      <OptionsList id="os-equipamentos" values={options.equipamentos} />
-      <OptionsList id="os-setores" values={options.setores} />
-      <OptionsList id="os-areas" values={options.areas} />
-      <OptionsList id="os-responsaveis" values={options.responsaveis} />
     </div>
   );
 }
