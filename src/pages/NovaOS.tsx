@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { AlertCircle, Check, CheckCircle2, ChevronsUpDown, History, Loader2, RotateCcw, Save } from "lucide-react";
 import { createOSInSheet, SheetOS } from "@/lib/sheets-api";
@@ -174,7 +173,7 @@ const TextField = memo(function TextField({
   );
 });
 
-interface LockedSelectFieldProps {
+interface SearchableLockedSelectFieldProps {
   label: string;
   field: FormField;
   value: string;
@@ -185,47 +184,6 @@ interface LockedSelectFieldProps {
   placeholder?: string;
 }
 
-const LockedSelectField = memo(function LockedSelectField({
-  label,
-  field,
-  value,
-  options,
-  error,
-  onChange,
-  required,
-  placeholder = "Selecione",
-}: LockedSelectFieldProps) {
-  const hasOptions = options.length > 0;
-
-  return (
-    <div className="space-y-1">
-      <Label className="text-xs font-medium text-muted-foreground">
-        {label} {required && <span className="text-destructive">*</span>}
-      </Label>
-      <Select
-        value={value}
-        onValueChange={(selected) => onChange(field, selected)}
-        disabled={!hasOptions}
-      >
-        <SelectTrigger
-          className={error ? "border-destructive ring-1 ring-destructive/30" : "border-l-2 border-l-primary/40"}
-          aria-invalid={!!error}
-        >
-          <SelectValue placeholder={hasOptions ? placeholder : "Nenhuma opção disponível"} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option} value={option}>
-              {option}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {error && <FieldError message={error} />}
-    </div>
-  );
-});
-
 const SearchableLockedSelectField = memo(function SearchableLockedSelectField({
   label,
   field,
@@ -235,7 +193,7 @@ const SearchableLockedSelectField = memo(function SearchableLockedSelectField({
   onChange,
   required,
   placeholder = "Selecione",
-}: LockedSelectFieldProps) {
+}: SearchableLockedSelectFieldProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const hasOptions = options.length > 0;
@@ -295,7 +253,7 @@ const SearchableLockedSelectField = memo(function SearchableLockedSelectField({
           <div className="max-h-72 overflow-y-auto pr-1">
             {filteredOptions.length === 0 ? (
               <p className="px-2 py-6 text-center text-xs text-muted-foreground">
-                Nenhum equipamento encontrado na lista.
+                Nenhum resultado encontrado na lista.
               </p>
             ) : (
               filteredOptions.map((option) => (
@@ -500,7 +458,7 @@ export default function NovaOS() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <LockedSelectField
+            <SearchableLockedSelectField
               label="Setor"
               field="setor"
               value={form.setor}
@@ -508,7 +466,7 @@ export default function NovaOS() {
               error={errors.setor}
               onChange={setField}
             />
-            <LockedSelectField
+            <SearchableLockedSelectField
               label="Área"
               field="area"
               value={form.area}
@@ -519,7 +477,7 @@ export default function NovaOS() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <LockedSelectField
+            <SearchableLockedSelectField
               label="Responsável"
               field="responsavel"
               value={form.responsavel}
@@ -528,24 +486,15 @@ export default function NovaOS() {
               onChange={setField}
               required
             />
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Tipo de serviço <span className="text-destructive">*</span>
-              </Label>
-              <Select value={form.tipo} onValueChange={(value) => setField("tipo", value)}>
-                <SelectTrigger className={errors.tipo ? "border-destructive ring-1 ring-destructive/30" : "border-l-2 border-l-primary/40"}>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {options.tipos.map((tipo) => (
-                    <SelectItem key={tipo} value={tipo}>
-                      {tipo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.tipo && <FieldError message={errors.tipo} />}
-            </div>
+            <SearchableLockedSelectField
+              label="Tipo de serviço"
+              field="tipo"
+              value={form.tipo}
+              options={options.tipos}
+              error={errors.tipo}
+              onChange={setField}
+              required
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
