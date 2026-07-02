@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { AlertCircle, CheckCircle2, History, Loader2, RotateCcw, Save } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, ChevronsUpDown, History, Loader2, RotateCcw, Save } from "lucide-react";
 import { createOSInSheet, SheetOS } from "@/lib/sheets-api";
 import { useSheetOS } from "@/hooks/use-sheet-os";
-import { safeArray, safeString, uniqueSorted } from "@/lib/data-helpers";
+import { normalizeText, safeArray, safeString, uniqueSorted } from "@/lib/data-helpers";
+import { cn } from "@/lib/utils";
 
 interface FormData {
   equipamento: string;
@@ -224,6 +226,98 @@ const LockedSelectField = memo(function LockedSelectField({
   );
 });
 
+const SearchableLockedSelectField = memo(function SearchableLockedSelectField({
+  label,
+  field,
+  value,
+  options,
+  error,
+  onChange,
+  required,
+  placeholder = "Selecione",
+}: LockedSelectFieldProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const hasOptions = options.length > 0;
+
+  const filteredOptions = useMemo(() => {
+    const q = normalizeText(query);
+    if (!q) return options.slice(0, 100);
+    return options.filter((option) => normalizeText(option).includes(q)).slice(0, 100);
+  }, [options, query]);
+
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) setQuery("");
+  }, []);
+
+  const selectOption = useCallback(
+    (selected: string) => {
+      onChange(field, selected);
+      setOpen(false);
+      setQuery("");
+    },
+    [field, onChange],
+  );
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs font-medium text-muted-foreground">
+        {label} {required && <span className="text-destructive">*</span>}
+      </Label>
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            aria-invalid={!!error}
+            disabled={!hasOptions}
+            className={cn(
+              "h-10 w-full justify-between bg-background px-3 text-left font-normal",
+              error ? "border-destructive ring-1 ring-destructive/30" : "border-l-2 border-l-primary/40",
+              !value && "text-muted-foreground",
+            )}
+          >
+            <span className="truncate">{value || (hasOptions ? placeholder : "Nenhuma opção disponível")}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="z-[72] w-[var(--radix-popover-trigger-width)] p-2">
+          <Input
+            autoFocus
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Digite para filtrar..."
+            className="mb-2 h-9"
+          />
+          <div className="max-h-72 overflow-y-auto pr-1">
+            {filteredOptions.length === 0 ? (
+              <p className="px-2 py-6 text-center text-xs text-muted-foreground">
+                Nenhum equipamento encontrado na lista.
+              </p>
+            ) : (
+              filteredOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => selectOption(option)}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none"
+                >
+                  <Check className={cn("h-4 w-4 shrink-0", value === option ? "opacity-100" : "opacity-0")} />
+                  <span className="truncate">{option}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+      {error && <FieldError message={error} />}
+    </div>
+  );
+});
+
 interface TextAreaFieldProps {
   label: string;
   field: FormField;
@@ -385,7 +479,7 @@ export default function NovaOS() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="stat-card space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <LockedSelectField
+            <SearchableLockedSelectField
               label="Equipamento / TAG"
               field="equipamento"
               value={form.equipamento}
