@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Droplets, PlusCircle, ClipboardList, Package, FileText, Truck, BarChart3 } from "lucide-react";
+import { Droplets, PlusCircle, ClipboardList, Package, FileText, Truck, BarChart3, Hammer } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: Droplets, label: "Lubrif." },
@@ -8,6 +8,7 @@ const navItems = [
   { path: "/preventivas", icon: Package, label: "Estoque" },
   { path: "/nf", icon: FileText, label: "NF" },
   { path: "/lancamentos", icon: Truck, label: "Serv. Ext." },
+  { path: "/obras", icon: Hammer, label: "Obras" },
   { path: "/relatorios", icon: BarChart3, label: "Relat." },
 ];
 

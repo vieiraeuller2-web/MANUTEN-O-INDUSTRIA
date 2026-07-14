@@ -16,6 +16,7 @@ const Estoque = lazy(() => import("./pages/Estoque"));
 const NotasFiscais = lazy(() => import("./pages/NotasFiscais"));
 const ServicosExternos = lazy(() => import("./pages/ServicosExternos"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
+const Obras = lazy(() => import("./pages/Obras"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -93,6 +94,7 @@ const App = () => (
           <Route path="/nf" element={<Layout><NotasFiscais /></Layout>} />
           <Route path="/lancamentos" element={<Layout><ServicosExternos /></Layout>} />
           <Route path="/servicos-externos" element={<Layout><ServicosExternos /></Layout>} />
+          <Route path="/obras" element={<Layout><Obras /></Layout>} />
           <Route path="/relatorios" element={<Layout><Relatorios /></Layout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>

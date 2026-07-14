@@ -7,6 +7,8 @@ import { normalizarHoraSheets } from "@/lib/time-helpers";
 
 const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 const FN_URL = `https://${PROJECT_ID}.supabase.co/functions/v1/sheets-proxy`;
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbzz1dTU7HVTScVtb37rxAqSR7X0OQmUiZcfvePwGkWM2LaKx1JRSwcEDKnRPMJBPxS7mw/exec?sheet=BD";
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 async function authHeaders() {
@@ -185,18 +187,33 @@ export async function fetchOSFromSheet(): Promise<SheetOS[]> {
   return parseSheetResponse(data);
 }
 
-export async function createOSInSheet(payload: SheetOS): Promise<void> {
-  const res = await fetch(FN_URL, {
+export async function createOSInSheet(os: SheetOS): Promise<void> {
+  const payload = {
+    ...os,
+    action: "registrar_os",
+  };
+
+  console.log("Payload OS enviado:", payload);
+
+  const response = await fetch(API_URL, {
     method: "POST",
-    headers: await authHeaders(),
-    body: JSON.stringify(payload),
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify(payload)
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error || "Falha ao cadastrar OS.");
+
+  const text = await response.text();
+  console.log("Resposta bruta OS:", text);
+  const data = JSON.parse(text);
+
+  if (data.success === true) {
+    return;
   }
-  const data = await res.json().catch(() => ({}));
-  if (data?.ok === false || data?.error) {
-    throw new Error(String(data.error || "Falha ao cadastrar OS."));
+
+  if (data.success === false) {
+    throw new Error(String(data.error || data.message || "Falha ao cadastrar OS."));
   }
+
+  throw new Error("Resposta inválida ao cadastrar OS.");
 }
