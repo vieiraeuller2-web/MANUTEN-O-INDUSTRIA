@@ -76,8 +76,16 @@ export interface SaveOSFormData {
   hora_inicio?: unknown;
   dataConclusao?: unknown;
   data_conclusao?: unknown;
+  dataFim?: unknown;
+  data_fim?: unknown;
+  dataFinal?: unknown;
+  data_final?: unknown;
   horaConclusao?: unknown;
   hora_conclusao?: unknown;
+  horaFim?: unknown;
+  hora_fim?: unknown;
+  horaFinal?: unknown;
+  hora_final?: unknown;
   horimetro?: unknown;
   observacoes?: unknown;
   observacao?: unknown;
@@ -230,6 +238,26 @@ export async function fetchOSFromSheet(): Promise<SheetOS[]> {
 }
 
 export async function createOSInSheet(formData: SaveOSFormData) {
+  const dataConclusao = String(
+    formData.dataConclusao ??
+    formData.data_conclusao ??
+    formData.dataFim ??
+    formData.data_fim ??
+    formData.dataFinal ??
+    formData.data_final ??
+    ""
+  ).trim();
+
+  const horaConclusao = String(
+    formData.horaConclusao ??
+    formData.hora_conclusao ??
+    formData.horaFim ??
+    formData.hora_fim ??
+    formData.horaFinal ??
+    formData.hora_final ??
+    ""
+  ).trim();
+
   const payload: CreateOSPayload = {
     action: "registrar_os",
     equipamento: String(
@@ -264,28 +292,20 @@ export async function createOSInSheet(formData: SaveOSFormData) {
     ).trim(),
 
     data_inicio: String(
-      formData.dataInicio ||
-      formData.data_inicio ||
+      formData.dataInicio ??
+      formData.data_inicio ??
       ""
     ).trim(),
 
     hora_inicio: String(
-      formData.horaInicio ||
-      formData.hora_inicio ||
+      formData.horaInicio ??
+      formData.hora_inicio ??
       ""
     ).trim(),
 
-    data_conclusao: String(
-      formData.dataConclusao ||
-      formData.data_conclusao ||
-      ""
-    ).trim(),
+    data_conclusao: dataConclusao,
 
-    hora_conclusao: String(
-      formData.horaConclusao ||
-      formData.hora_conclusao ||
-      ""
-    ).trim(),
+    hora_conclusao: horaConclusao,
 
     horimetro: String(formData.horimetro ?? "").trim(),
 
@@ -297,8 +317,20 @@ export async function createOSInSheet(formData: SaveOSFormData) {
     ).trim()
   };
 
-  console.log("FORMULÁRIO OS:", formData);
-  console.log("PAYLOAD OS:", payload);
+  console.log("ESTADO COMPLETO DA OS:", formData);
+
+  console.log("CAMPOS DE CONCLUSÃO ANTES DO PAYLOAD:", {
+    dataConclusao: formData.dataConclusao,
+    data_conclusao: formData.data_conclusao,
+    dataFim: formData.dataFim,
+    data_fim: formData.data_fim,
+    horaConclusao: formData.horaConclusao,
+    hora_conclusao: formData.hora_conclusao,
+    horaFim: formData.horaFim,
+    hora_fim: formData.hora_fim
+  });
+
+  console.log("PAYLOAD FINAL DA OS:", payload);
 
   const estaPreenchido = (valor: unknown) =>
     valor !== null &&
@@ -317,7 +349,7 @@ export async function createOSInSheet(formData: SaveOSFormData) {
     ["Hora Conclusão", payload.hora_conclusao],
     ["Horímetro", payload.horimetro],
     ["Observações", payload.observacoes]
-  ];
+  ] as const;
 
   const faltando = camposObrigatorios
     .filter(([_, value]) => !estaPreenchido(value))

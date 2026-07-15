@@ -21,8 +21,8 @@ interface FormData {
   tipo: string;
   data_inicio: string;
   hora_inicio: string;
-  data_fim: string;
-  hora_fim: string;
+  dataConclusao: string;
+  horaConclusao: string;
   horimetro: string;
   observacoes: string;
 }
@@ -39,8 +39,8 @@ const REQUIRED_FIELDS: FormField[] = [
   "tipo",
   "data_inicio",
   "hora_inicio",
-  "data_fim",
-  "hora_fim",
+  "dataConclusao",
+  "horaConclusao",
   "horimetro",
   "observacoes",
 ];
@@ -52,8 +52,8 @@ const FIELD_LABELS: Partial<Record<FormField, string>> = {
   tipo: "Tipo",
   data_inicio: "Data Início",
   hora_inicio: "Hora Início",
-  data_fim: "Data Conclusão",
-  hora_fim: "Hora Conclusão",
+  dataConclusao: "Data Conclusão",
+  horaConclusao: "Hora Conclusão",
   horimetro: "Horímetro",
   observacoes: "Observações",
 };
@@ -67,8 +67,8 @@ function initialForm(): FormData {
     tipo: "",
     data_inicio: "",
     hora_inicio: "",
-    data_fim: "",
-    hora_fim: "",
+    dataConclusao: "",
+    horaConclusao: "",
     horimetro: "",
     observacoes: "",
   };
@@ -120,9 +120,8 @@ function validate(form: FormData, options: SelectOptions): FormErrors {
     errors.tipo = "Selecione um tipo da lista";
   }
 
-  const dataFim = form.data_fim || form.data_inicio;
-  if (dataFim && form.data_inicio && dataFim < form.data_inicio) {
-    errors.data_fim = "A data final não pode ser anterior";
+  if (form.dataConclusao && form.data_inicio && form.dataConclusao < form.data_inicio) {
+    errors.dataConclusao = "A data final não pode ser anterior";
   }
 
   return errors;
@@ -350,13 +349,7 @@ export default function NovaOS() {
 
   const setField = useCallback((field: FormField, value: string) => {
     setSaved(false);
-    setForm((prev) => {
-      const next = { ...prev, [field]: value ?? "" };
-      if (field === "data_inicio" && (!prev.data_fim || prev.data_fim === prev.data_inicio)) {
-        next.data_fim = value ?? "";
-      }
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [field]: value ?? "" }));
     setErrors((prev) => {
       if (!prev[field]) return prev;
       const next = { ...prev };
@@ -520,19 +513,19 @@ export default function NovaOS() {
             />
             <TextField
               label="Data Conclusão"
-              field="data_fim"
+              field="dataConclusao"
               type="date"
-              value={form.data_fim}
-              error={errors.data_fim}
+              value={form.dataConclusao}
+              error={errors.dataConclusao}
               onChange={setField}
               required
             />
             <TextField
               label="Hora Conclusão"
-              field="hora_fim"
+              field="horaConclusao"
               type="time"
-              value={form.hora_fim}
-              error={errors.hora_fim}
+              value={form.horaConclusao}
+              error={errors.horaConclusao}
               onChange={setField}
               required
             />
