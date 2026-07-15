@@ -64,7 +64,7 @@ export function gerarPacoteIA(input: PacoteIAInput): string {
       `${formatDataBr(o.data_inicio)} ${normalizarHoraSheets(o.hora_inicio)} → ` +
       `${formatDataBr(o.data_fim)} ${normalizarHoraSheets(o.hora_fim)} | ` +
       `tempo: ${calcularTempoOS(o.data_inicio, o.hora_inicio, o.data_fim, o.hora_fim)} | ` +
-      `${String(o.descricao || "").slice(0, 90).replace(/\s+/g, " ")}`
+      `${String(o.observacoes || "").slice(0, 90).replace(/\s+/g, " ")}`
     );
 
   const totalFiltrado = Array.isArray(input.filtered) ? input.filtered.length : 0;

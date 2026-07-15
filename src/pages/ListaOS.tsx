@@ -30,7 +30,7 @@ interface NormalizedOS {
   dataFim: string;
   horaFim: string;
   horimetro: string;
-  descricao: string;
+  observacoes: string;
   dataInicioIso: string;
   sortTime: number;
 }
@@ -77,7 +77,7 @@ function normalizeOS(os: SheetOS, index: number): NormalizedOS {
   const dataFim = osField(os, "data_fim", "Data Fim", "Data Conclusão", "DATA_FIM");
   const horaFim = osField(os, "hora_fim", "Hora Fim", "Hora Conclusão", "HORA_FIM");
   const horimetro = osField(os, "horimetro", "Horímetro", "Horimetro", "HORIMETRO");
-  const descricao = osField(os, "descricao", "Descrição", "Observações", "OBSERVACOES");
+  const observacoes = osField(os, "observacoes", "Observações", "OBSERVACOES");
   const sortTime = parseDataHoraLocal(dataInicio, horaInicio || "00:00")?.getTime() ?? -Infinity;
 
   return {
@@ -94,7 +94,7 @@ function normalizeOS(os: SheetOS, index: number): NormalizedOS {
     dataFim,
     horaFim,
     horimetro,
-    descricao,
+    observacoes,
     dataInicioIso: dataToIso(dataInicio),
     sortTime,
   };
@@ -142,7 +142,7 @@ export default function ListaOS() {
     try {
       const rows = normalized
         .filter((os) => {
-          if (dSearch && !textIncludes(`${os.numero} ${os.equipamento} ${os.descricao}`, dSearch)) return false;
+          if (dSearch && !textIncludes(`${os.numero} ${os.equipamento} ${os.observacoes}`, dSearch)) return false;
           if (dSetor && !textIncludes(os.setor, dSetor)) return false;
           if (dArea && !textIncludes(os.area, dArea)) return false;
           if (dTipo && !textIncludes(os.tipo, dTipo)) return false;
@@ -214,7 +214,7 @@ export default function ListaOS() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar OS, equipamento ou descrição..."
+            placeholder="Buscar OS, equipamento ou observações..."
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
@@ -408,10 +408,10 @@ export default function ListaOS() {
               <DetailRow label="Hora fim" value={formatHoraBr(detail.horaFim)} />
               <DetailRow label="Horímetro" value={detail.horimetro} />
               <DetailRow label="Tempo do serviço" value={calcularTempoOS(detail.dataInicio, detail.horaInicio, detail.dataFim, detail.horaFim)} />
-              {detail.descricao && (
+              {detail.observacoes && (
                 <div className="pt-2">
-                  <p className="text-xs text-muted-foreground mb-1">Descrição</p>
-                  <p className="text-xs whitespace-pre-wrap">{detail.descricao}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Observações</p>
+                  <p className="text-xs whitespace-pre-wrap">{detail.observacoes}</p>
                 </div>
               )}
             </div>

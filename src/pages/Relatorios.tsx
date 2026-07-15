@@ -761,7 +761,7 @@ function gerarRelatorioHTML(d: RelData): string {
       <td>${esc(o.equipamento)}</td><td>${esc(o.setor)}</td><td>${esc(o.responsavel)}</td>
       <td>${esc(o.tipo)}</td><td>${esc(formatBR(o.data_inicio))}</td><td>${esc(normalizarHoraSheets(o.hora_inicio))}</td>
       <td>${esc(formatBR(o.data_fim))}</td><td>${esc(normalizarHoraSheets(o.hora_fim))}</td>
-      <td>${esc(tempo)}</td><td>${esc(o.descricao)}</td>
+      <td>${esc(tempo)}</td><td>${esc(o.observacoes)}</td>
     </tr>`;
   }).join("");
 
@@ -843,7 +843,7 @@ p{color:#cfccc4}
     <thead><tr>
       <th>Equipamento</th><th>Setor</th><th>Responsável</th><th>Tipo</th>
       <th>Data início</th><th>Hora início</th><th>Data fim</th><th>Hora fim</th>
-      <th>Tempo</th><th>Descrição</th>
+      <th>Tempo</th><th>Observações</th>
     </tr></thead>
     <tbody>${rows || '<tr><td colspan="10" style="text-align:center;padding:20px;color:#8a8780">Sem registros</td></tr>'}</tbody>
   </table></div>

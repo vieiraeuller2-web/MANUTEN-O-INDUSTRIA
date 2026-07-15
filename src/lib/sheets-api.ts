@@ -36,7 +36,7 @@ export interface SheetOS {
   data_fim: string;
   hora_fim: string;
   horimetro: string | number;
-  descricao: string;
+  observacoes: string;
   [key: string]: any;
 }
 
@@ -53,70 +53,35 @@ export interface CreateOSPayload {
   hora_conclusao: string;
   horimetro: string;
   observacoes: string;
-  descricao_servico: string;
-  causa_provavel: string;
-  acao_realizada: string;
 }
 
 export interface SaveOSFormData {
   equipamento?: unknown;
-  tag_equipamento?: unknown;
   tagEquipamento?: unknown;
+  tag_equipamento?: unknown;
   tag?: unknown;
-  ativo?: unknown;
   setor?: unknown;
-  setorEquipamento?: unknown;
   area?: unknown;
-  área?: unknown;
   modalidade?: unknown;
   especialidade?: unknown;
   responsavel?: unknown;
   responsavelTecnico?: unknown;
   tecnico?: unknown;
-  colaborador?: unknown;
   tipo?: unknown;
-  tipo_os?: unknown;
   tipoOs?: unknown;
-  tipoServico?: unknown;
-  data_inicio?: unknown;
+  tipo_os?: unknown;
   dataInicio?: unknown;
-  data_servico?: unknown;
-  dataServico?: unknown;
-  data?: unknown;
-  hora_inicio?: unknown;
+  data_inicio?: unknown;
   horaInicio?: unknown;
-  hora_servico?: unknown;
-  horaServico?: unknown;
-  hora?: unknown;
-  data_conclusao?: unknown;
+  hora_inicio?: unknown;
   dataConclusao?: unknown;
-  data_fim?: unknown;
-  dataFim?: unknown;
-  data_final?: unknown;
-  dataFinal?: unknown;
-  hora_conclusao?: unknown;
+  data_conclusao?: unknown;
   horaConclusao?: unknown;
-  hora_fim?: unknown;
-  horaFim?: unknown;
-  hora_final?: unknown;
-  horaFinal?: unknown;
+  hora_conclusao?: unknown;
   horimetro?: unknown;
-  horímetro?: unknown;
-  horimetroFinal?: unknown;
-  horimetro_fechamento?: unknown;
   observacoes?: unknown;
-  observações?: unknown;
   observacao?: unknown;
   obs?: unknown;
-  descricao_servico?: unknown;
-  descricaoServico?: unknown;
-  descricao?: unknown;
-  causa_provavel?: unknown;
-  causaProvavel?: unknown;
-  causa?: unknown;
-  acao_realizada?: unknown;
-  acaoRealizada?: unknown;
-  acao?: unknown;
 }
 
 
@@ -145,10 +110,8 @@ const HEADER_MAP: Record<string, keyof SheetOS> = {
   "hora conclusao": "hora_fim",
   horimetro: "horimetro",
   "horímetro": "horimetro",
-  descricao: "descricao",
-  "descrição": "descricao",
-  "observações": "descricao",
-  observacoes: "descricao",
+  "observações": "observacoes",
+  observacoes: "observacoes",
 };
 
 function normalizeKey(k: string): keyof SheetOS | null {
@@ -196,7 +159,7 @@ function rowToOS(row: any[], headerKeys: (keyof SheetOS | null)[]): SheetOS {
   const obj: SheetOS = {
     equipamento: "", setor: "", area: "", responsavel: "", tipo: "",
     data_inicio: "", hora_inicio: "", data_fim: "", hora_fim: "",
-    horimetro: "", descricao: "",
+    horimetro: "", observacoes: "",
   };
   headerKeys.forEach((key, i) => {
     if (!key) return;
@@ -241,7 +204,7 @@ function parseSheetResponse(data: any): SheetOS[] {
         data_fim: normalizeDate(getRawValue(safeRow, "Data Conclusão", "data_fim") ?? getRawValue(safeRow, "Data Fim", "data_fim")),
         hora_fim: normalizeTime(getRawValue(safeRow, "Hora Conclusão", "hora_fim") ?? getRawValue(safeRow, "Hora Fim", "hora_fim")),
         horimetro: getRawValue(safeRow, "Horímetro", "horimetro") ?? "",
-        descricao: String(getRawValue(safeRow, "Observações", "descricao") ?? getRawValue(safeRow, "Descrição", "descricao") ?? ""),
+        observacoes: String(getRawValue(safeRow, "Observações", "observacoes") ?? ""),
       };
       Object.entries(safeRow).forEach(([k, v]) => {
         if (!(k in os)) (os as any)[k] = v;
@@ -271,22 +234,16 @@ export async function createOSInSheet(formData: SaveOSFormData) {
     action: "registrar_os",
     equipamento: String(
       formData.equipamento ||
-      formData.tag_equipamento ||
       formData.tagEquipamento ||
+      formData.tag_equipamento ||
       formData.tag ||
-      formData.ativo ||
       ""
     ).trim(),
 
-    setor: String(
-      formData.setor ||
-      formData.setorEquipamento ||
-      ""
-    ).trim(),
+    setor: String(formData.setor || "").trim(),
 
     area: String(
       formData.area ||
-      formData.área ||
       formData.modalidade ||
       formData.especialidade ||
       ""
@@ -296,108 +253,57 @@ export async function createOSInSheet(formData: SaveOSFormData) {
       formData.responsavel ||
       formData.responsavelTecnico ||
       formData.tecnico ||
-      formData.colaborador ||
       ""
     ).trim(),
 
     tipo: String(
       formData.tipo ||
-      formData.tipo_os ||
       formData.tipoOs ||
-      formData.tipoServico ||
+      formData.tipo_os ||
       ""
     ).trim(),
 
     data_inicio: String(
-      formData.data_inicio ||
       formData.dataInicio ||
-      formData.data_servico ||
-      formData.dataServico ||
-      formData.data ||
+      formData.data_inicio ||
       ""
     ).trim(),
 
     hora_inicio: String(
-      formData.hora_inicio ||
       formData.horaInicio ||
-      formData.hora_servico ||
-      formData.horaServico ||
-      formData.hora ||
+      formData.hora_inicio ||
       ""
     ).trim(),
 
     data_conclusao: String(
-      formData.data_conclusao ||
       formData.dataConclusao ||
-      formData.data_fim ||
-      formData.dataFim ||
-      formData.data_final ||
-      formData.dataFinal ||
-      formData.data_inicio ||
-      formData.dataInicio ||
-      formData.data_servico ||
-      formData.dataServico ||
-      formData.data ||
+      formData.data_conclusao ||
       ""
     ).trim(),
 
     hora_conclusao: String(
-      formData.hora_conclusao ||
       formData.horaConclusao ||
-      formData.hora_fim ||
-      formData.horaFim ||
-      formData.hora_final ||
-      formData.horaFinal ||
+      formData.hora_conclusao ||
       ""
     ).trim(),
 
-    horimetro: String(
-      formData.horimetro ||
-      formData.horímetro ||
-      formData.horimetroFinal ||
-      formData.horimetro_fechamento ||
-      ""
-    ).trim(),
+    horimetro: String(formData.horimetro ?? "").trim(),
 
     observacoes: String(
       formData.observacoes ||
-      formData.observações ||
       formData.observacao ||
       formData.obs ||
-      formData.descricao_servico ||
-      formData.descricaoServico ||
-      formData.descricao ||
-      formData.causa_provavel ||
-      formData.causaProvavel ||
-      formData.acao_realizada ||
-      formData.acaoRealizada ||
-      ""
-    ).trim(),
-
-    descricao_servico: String(
-      formData.descricao_servico ||
-      formData.descricaoServico ||
-      formData.descricao ||
-      ""
-    ).trim(),
-
-    causa_provavel: String(
-      formData.causa_provavel ||
-      formData.causaProvavel ||
-      formData.causa ||
-      ""
-    ).trim(),
-
-    acao_realizada: String(
-      formData.acao_realizada ||
-      formData.acaoRealizada ||
-      formData.acao ||
       ""
     ).trim()
   };
 
-  console.log("FORM DATA COMPLETO ANTES DE SALVAR OS:", formData);
-  console.log("PAYLOAD COMPLETO ENVIADO PARA APPS SCRIPT:", payload);
+  console.log("FORMULÁRIO OS:", formData);
+  console.log("PAYLOAD OS:", payload);
+
+  const estaPreenchido = (valor: unknown) =>
+    valor !== null &&
+    valor !== undefined &&
+    String(valor).trim() !== "";
 
   const camposObrigatorios = [
     ["Equipamento", payload.equipamento],
@@ -414,7 +320,7 @@ export async function createOSInSheet(formData: SaveOSFormData) {
   ];
 
   const faltando = camposObrigatorios
-    .filter(([_, value]) => !String(value || "").trim())
+    .filter(([_, value]) => !estaPreenchido(value))
     .map(([label]) => label);
 
   if (faltando.length > 0) {
@@ -430,20 +336,17 @@ export async function createOSInSheet(formData: SaveOSFormData) {
   });
 
   const text = await response.text();
-  console.log("RESPOSTA BRUTA APPS SCRIPT:", text);
 
   let data;
   try {
     data = JSON.parse(text);
   } catch (error) {
-    console.error("Resposta não JSON do Apps Script:", text);
+    console.error("Resposta inválida do Apps Script:", text);
     throw new Error("Resposta inválida do servidor.");
   }
 
-  console.log("RESPOSTA JSON APPS SCRIPT:", data);
-
   if (data.success !== true) {
-    throw new Error(data.message || "Erro ao salvar OS.");
+    throw new Error(data.message || "Erro ao salvar registro.");
   }
 
   return data;

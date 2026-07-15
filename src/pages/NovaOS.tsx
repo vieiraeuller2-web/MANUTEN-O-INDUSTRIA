@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState, type ChangeEvent, type FormEvent, type HTMLAttributes } from "react";
+import { memo, useCallback, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type HTMLAttributes } from "react";
 import { Link } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,6 @@ interface FormData {
   data_fim: string;
   hora_fim: string;
   horimetro: string;
-  descricao: string;
-  causa: string;
-  acao: string;
   observacoes: string;
 }
 
@@ -61,30 +58,18 @@ const FIELD_LABELS: Partial<Record<FormField, string>> = {
   observacoes: "Observações",
 };
 
-function todayLocalISO() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
 function initialForm(): FormData {
-  const today = todayLocalISO();
   return {
     equipamento: "",
     setor: "",
     area: "",
     responsavel: "",
     tipo: "",
-    data_inicio: today,
+    data_inicio: "",
     hora_inicio: "",
-    data_fim: today,
+    data_fim: "",
     hora_fim: "",
     horimetro: "",
-    descricao: "",
-    causa: "",
-    acao: "",
     observacoes: "",
   };
 }
@@ -103,14 +88,19 @@ function isListedValue(value: string, list: string[]) {
   return list.includes(text);
 }
 
+const estaPreenchido = (valor: unknown) =>
+  valor !== null &&
+  valor !== undefined &&
+  String(valor).trim() !== "";
+
 function validate(form: FormData, options: SelectOptions): FormErrors {
   const errors: FormErrors = {};
 
   REQUIRED_FIELDS.forEach((field) => {
-    if (!safeString(form[field])) errors[field] = `${FIELD_LABELS[field]} é obrigatório.`;
+    if (!estaPreenchido(form[field])) errors[field] = `${FIELD_LABELS[field]} é obrigatório.`;
   });
 
-  if (form.horimetro && Number.isNaN(Number(form.horimetro))) {
+  if (estaPreenchido(form.horimetro) && Number.isNaN(Number(form.horimetro))) {
     errors.horimetro = "Informe um número válido";
   }
 
@@ -344,6 +334,7 @@ export default function NovaOS() {
   const [form, setForm] = useState<FormData>(() => initialForm());
   const [errors, setErrors] = useState<FormErrors>({});
   const [saved, setSaved] = useState(false);
+  const submittingRef = useRef(false);
 
   const listaSegura = safeArray<SheetOS>(historico);
   const options = useMemo(
@@ -395,7 +386,8 @@ export default function NovaOS() {
         });
         return;
       }
-      if (mutation.isPending) return;
+      if (mutation.isPending || submittingRef.current) return;
+      submittingRef.current = true;
       mutation.mutate(
         { ...form },
         {
@@ -413,6 +405,9 @@ export default function NovaOS() {
               description: err instanceof Error ? err.message : "Erro ao salvar OS.",
               variant: "destructive",
             });
+          },
+          onSettled: () => {
+            submittingRef.current = false;
           },
         },
       );
@@ -544,17 +539,8 @@ export default function NovaOS() {
           </div>
         </div>
 
-        <div className="stat-card space-y-4">
-          <TextAreaField
-            label="Descrição do serviço"
-            field="descricao"
-            value={form.descricao}
-            error={errors.descricao}
-            onChange={setField}
-          />
-          <TextAreaField label="Causa provável" field="causa" value={form.causa} error={errors.causa} onChange={setField} rows={2} />
-          <TextAreaField label="Ação realizada" field="acao" value={form.acao} error={errors.acao} onChange={setField} rows={2} />
-          <TextAreaField label="Observações" field="observacoes" value={form.observacoes} error={errors.observacoes} onChange={setField} required rows={2} />
+        <div className="stat-card">
+          <TextAreaField label="Observações" field="observacoes" value={form.observacoes} error={errors.observacoes} onChange={setField} required rows={6} />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 pt-1">

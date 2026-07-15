@@ -288,7 +288,7 @@ export function gerarPdfRelatorio(input: RelatorioInput, fileName = "relatorio-m
 
   autoTable(doc, {
     startY: y,
-    head: [["Equipamento", "Setor", "Resp.", "Tipo", "Início", "Fim", "Tempo", "Descrição"]],
+    head: [["Equipamento", "Setor", "Resp.", "Tipo", "Início", "Fim", "Tempo", "Observações"]],
     body: limited.map((o) => [
       String(o.equipamento ?? ""),
       String(o.setor ?? ""),
@@ -297,7 +297,7 @@ export function gerarPdfRelatorio(input: RelatorioInput, fileName = "relatorio-m
       `${formatDataBr(o.data_inicio)} ${normalizarHoraSheets(o.hora_inicio)}`,
       `${formatDataBr(o.data_fim)} ${normalizarHoraSheets(o.hora_fim)}`,
       calcularTempoOS(o.data_inicio, o.hora_inicio, o.data_fim, o.hora_fim),
-      String(o.descricao ?? "").slice(0, 60),
+      String(o.observacoes ?? ""),
     ]),
     styles: { fontSize: 7, cellPadding: 1.5, textColor: COLORS.text, lineColor: COLORS.border },
     headStyles: { fillColor: COLORS.primary, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5 },
