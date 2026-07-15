@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/hooks/use-toast";
 import { AlertCircle, Check, CheckCircle2, ChevronsUpDown, History, Loader2, RotateCcw, Save } from "lucide-react";
-import { createOSInSheet, SheetOS } from "@/lib/sheets-api";
+import { createOSInSheet, type CreateOSPayload, type SheetOS } from "@/lib/sheets-api";
 import { useSheetOS } from "@/hooks/use-sheet-os";
 import { normalizeText, safeArray, safeString, uniqueSorted } from "@/lib/data-helpers";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,32 @@ type FormField = keyof FormData;
 type FormErrors = Partial<Record<FormField, string>>;
 
 const TIPO_OPTIONS = ["CORRETIVA", "COR. PRO.", "PREVENTIVA", "COR. EQUIP. RESERV."];
+const REQUIRED_FIELDS: FormField[] = [
+  "equipamento",
+  "setor",
+  "area",
+  "responsavel",
+  "tipo",
+  "data_inicio",
+  "hora_inicio",
+  "data_fim",
+  "hora_fim",
+  "horimetro",
+  "observacoes",
+];
+const FIELD_LABELS: Partial<Record<FormField, string>> = {
+  equipamento: "Equipamento",
+  setor: "Setor",
+  area: "Área",
+  responsavel: "Responsável",
+  tipo: "Tipo",
+  data_inicio: "Data Início",
+  hora_inicio: "Hora Início",
+  data_fim: "Data Conclusão",
+  hora_fim: "Hora Conclusão",
+  horimetro: "Horímetro",
+  observacoes: "Observações",
+};
 
 function todayLocalISO() {
   const d = new Date();
@@ -64,19 +90,6 @@ function initialForm(): FormData {
   };
 }
 
-function buildDescricao(form: FormData) {
-  const blocos = [
-    ["Descrição do serviço", form.descricao],
-    ["Causa provável", form.causa],
-    ["Ação realizada", form.acao],
-    ["Observações", form.observacoes],
-  ]
-    .map(([label, value]) => [label, safeString(value)] as const)
-    .filter(([, value]) => value);
-
-  return blocos.map(([label, value]) => `${label}: ${value}`).join("\n\n");
-}
-
 interface SelectOptions {
   equipamentos: string[];
   setores: string[];
@@ -93,10 +106,9 @@ function isListedValue(value: string, list: string[]) {
 
 function validate(form: FormData, options: SelectOptions): FormErrors {
   const errors: FormErrors = {};
-  const required: FormField[] = ["equipamento", "responsavel", "tipo", "data_inicio", "hora_inicio", "hora_fim", "descricao"];
 
-  required.forEach((field) => {
-    if (!safeString(form[field])) errors[field] = "Obrigatório";
+  REQUIRED_FIELDS.forEach((field) => {
+    if (!safeString(form[field])) errors[field] = `${FIELD_LABELS[field]} é obrigatório.`;
   });
 
   if (form.horimetro && Number.isNaN(Number(form.horimetro))) {
@@ -370,22 +382,25 @@ export default function NovaOS() {
   }, []);
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      const dataFim = form.data_fim || form.data_inicio;
-      const descricaoFinal = buildDescricao(form);
-      const payload: SheetOS = {
-        equipamento: safeString(form.equipamento),
-        setor: safeString(form.setor),
-        area: safeString(form.area),
-        responsavel: safeString(form.responsavel),
-        tipo: safeString(form.tipo),
-        data_inicio: form.data_inicio,
-        hora_inicio: form.hora_inicio,
-        data_fim: dataFim,
-        hora_fim: form.hora_fim,
-        horimetro: form.horimetro ? Number(form.horimetro) : "",
-        descricao: descricaoFinal,
+    mutationFn: async (formData: FormData) => {
+      const payload: CreateOSPayload = {
+        action: "registrar_os",
+        equipamento: safeString(formData.equipamento),
+        setor: safeString(formData.setor),
+        area: safeString(formData.area),
+        responsavel: safeString(formData.responsavel),
+        tipo: safeString(formData.tipo),
+        data_inicio: safeString(formData.data_inicio),
+        hora_inicio: safeString(formData.hora_inicio),
+        data_conclusao: safeString(formData.data_fim),
+        hora_conclusao: safeString(formData.hora_fim),
+        horimetro: safeString(formData.horimetro),
+        observacoes: safeString(formData.observacoes),
       };
+
+      console.log("FORMULÁRIO OS COMPLETO:", formData);
+      console.log("PAYLOAD COMPLETO OS ENVIADO:", payload);
+
       await createOSInSheet(payload);
     },
     onSuccess: () => {
@@ -397,9 +412,10 @@ export default function NovaOS() {
     },
     onError: (err: unknown) => {
       console.error("Erro ao salvar registro de OS:", err);
+      setSaved(false);
       toast({
         title: "Erro ao salvar registro.",
-        description: "Os dados foram mantidos na tela para nova tentativa.",
+        description: err instanceof Error ? err.message : "Falha ao cadastrar OS.",
         variant: "destructive",
       });
     },
@@ -408,10 +424,20 @@ export default function NovaOS() {
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      setSaved(false);
       const nextErrors = validate(form, options);
       setErrors(nextErrors);
-      if (Object.keys(nextErrors).length > 0 || mutation.isPending) return;
-      mutation.mutate();
+      const firstError = Object.values(nextErrors)[0];
+      if (firstError) {
+        toast({
+          title: "Não foi possível salvar a OS.",
+          description: firstError,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (mutation.isPending) return;
+      mutation.mutate({ ...form });
     },
     [form, mutation, options],
   );
@@ -454,6 +480,7 @@ export default function NovaOS() {
               value={form.horimetro}
               error={errors.horimetro}
               onChange={setField}
+              required
             />
           </div>
 
@@ -465,6 +492,7 @@ export default function NovaOS() {
               options={options.setores}
               error={errors.setor}
               onChange={setField}
+              required
             />
             <SearchableLockedSelectField
               label="Área"
@@ -473,6 +501,7 @@ export default function NovaOS() {
               options={options.areas}
               error={errors.area}
               onChange={setField}
+              required
             />
           </div>
 
@@ -499,7 +528,7 @@ export default function NovaOS() {
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <TextField
-              label="Data do serviço"
+              label="Data Início"
               field="data_inicio"
               type="date"
               value={form.data_inicio}
@@ -508,7 +537,7 @@ export default function NovaOS() {
               required
             />
             <TextField
-              label="Hora início"
+              label="Hora Início"
               field="hora_inicio"
               type="time"
               value={form.hora_inicio}
@@ -517,21 +546,22 @@ export default function NovaOS() {
               required
             />
             <TextField
-              label="Hora fim"
+              label="Data Conclusão"
+              field="data_fim"
+              type="date"
+              value={form.data_fim}
+              error={errors.data_fim}
+              onChange={setField}
+              required
+            />
+            <TextField
+              label="Hora Conclusão"
               field="hora_fim"
               type="time"
               value={form.hora_fim}
               error={errors.hora_fim}
               onChange={setField}
               required
-            />
-            <TextField
-              label="Data fim"
-              field="data_fim"
-              type="date"
-              value={form.data_fim}
-              error={errors.data_fim}
-              onChange={setField}
             />
           </div>
         </div>
@@ -543,11 +573,10 @@ export default function NovaOS() {
             value={form.descricao}
             error={errors.descricao}
             onChange={setField}
-            required
           />
           <TextAreaField label="Causa provável" field="causa" value={form.causa} error={errors.causa} onChange={setField} rows={2} />
           <TextAreaField label="Ação realizada" field="acao" value={form.acao} error={errors.acao} onChange={setField} rows={2} />
-          <TextAreaField label="Observações" field="observacoes" value={form.observacoes} error={errors.observacoes} onChange={setField} rows={2} />
+          <TextAreaField label="Observações" field="observacoes" value={form.observacoes} error={errors.observacoes} onChange={setField} required rows={2} />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 pt-1">

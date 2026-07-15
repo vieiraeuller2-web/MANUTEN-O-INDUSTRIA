@@ -8,7 +8,7 @@ import { normalizarHoraSheets } from "@/lib/time-helpers";
 const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 const FN_URL = `https://${PROJECT_ID}.supabase.co/functions/v1/sheets-proxy`;
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbzz1dTU7HVTScVtb37rxAqSR7X0OQmUiZcfvePwGkWM2LaKx1JRSwcEDKnRPMJBPxS7mw/exec?sheet=BD";
+  "https://script.google.com/macros/s/AKfycbzz1dTU7HVTScVtb37rxAqSR7X0OQmUiZcfvePwGkWM2LaKx1JRSwcEDKnRPMJBPxS7mw/exec";
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 async function authHeaders() {
@@ -38,6 +38,21 @@ export interface SheetOS {
   horimetro: string | number;
   descricao: string;
   [key: string]: any;
+}
+
+export interface CreateOSPayload {
+  action: "registrar_os";
+  equipamento: string;
+  setor: string;
+  area: string;
+  responsavel: string;
+  tipo: string;
+  data_inicio: string;
+  hora_inicio: string;
+  data_conclusao: string;
+  hora_conclusao: string;
+  horimetro: string;
+  observacoes: string;
 }
 
 
@@ -187,14 +202,7 @@ export async function fetchOSFromSheet(): Promise<SheetOS[]> {
   return parseSheetResponse(data);
 }
 
-export async function createOSInSheet(os: SheetOS): Promise<void> {
-  const payload = {
-    ...os,
-    action: "registrar_os",
-  };
-
-  console.log("Payload OS enviado:", payload);
-
+export async function createOSInSheet(payload: CreateOSPayload): Promise<void> {
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -204,16 +212,19 @@ export async function createOSInSheet(os: SheetOS): Promise<void> {
   });
 
   const text = await response.text();
-  console.log("Resposta bruta OS:", text);
-  const data = JSON.parse(text);
+  console.log("RESPOSTA BRUTA SALVAR OS:", text);
 
-  if (data.success === true) {
-    return;
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (error) {
+    console.error("Resposta não JSON do Apps Script:", text);
+    throw new Error("Resposta inválida do servidor.");
   }
 
-  if (data.success === false) {
-    throw new Error(String(data.error || data.message || "Falha ao cadastrar OS."));
-  }
+  console.log("RESPOSTA JSON SALVAR OS:", data);
 
-  throw new Error("Resposta inválida ao cadastrar OS.");
+  if (data.success === true) return;
+
+  throw new Error(String(data.message || "Falha ao cadastrar OS."));
 }
