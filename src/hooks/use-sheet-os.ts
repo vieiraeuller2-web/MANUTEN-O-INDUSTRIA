@@ -1,5 +1,5 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchOSFromSheet } from "@/lib/sheets-api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createOSInSheet, fetchOSFromSheet } from "@/lib/sheets-api";
 
 /**
  * Hook centralizado para a lista de OS vinda da planilha.
@@ -26,4 +26,13 @@ export function useSheetOS() {
 export function useRefreshSheetOS() {
   const qc = useQueryClient();
   return () => qc.invalidateQueries({ queryKey: ["sheet-os"] });
+}
+
+export function useSaveSheetOS() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createOSInSheet,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sheet-os"] }),
+  });
 }

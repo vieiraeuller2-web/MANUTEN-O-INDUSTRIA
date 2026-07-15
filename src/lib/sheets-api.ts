@@ -53,6 +53,70 @@ export interface CreateOSPayload {
   hora_conclusao: string;
   horimetro: string;
   observacoes: string;
+  descricao_servico: string;
+  causa_provavel: string;
+  acao_realizada: string;
+}
+
+export interface SaveOSFormData {
+  equipamento?: unknown;
+  tag_equipamento?: unknown;
+  tagEquipamento?: unknown;
+  tag?: unknown;
+  ativo?: unknown;
+  setor?: unknown;
+  setorEquipamento?: unknown;
+  area?: unknown;
+  área?: unknown;
+  modalidade?: unknown;
+  especialidade?: unknown;
+  responsavel?: unknown;
+  responsavelTecnico?: unknown;
+  tecnico?: unknown;
+  colaborador?: unknown;
+  tipo?: unknown;
+  tipo_os?: unknown;
+  tipoOs?: unknown;
+  tipoServico?: unknown;
+  data_inicio?: unknown;
+  dataInicio?: unknown;
+  data_servico?: unknown;
+  dataServico?: unknown;
+  data?: unknown;
+  hora_inicio?: unknown;
+  horaInicio?: unknown;
+  hora_servico?: unknown;
+  horaServico?: unknown;
+  hora?: unknown;
+  data_conclusao?: unknown;
+  dataConclusao?: unknown;
+  data_fim?: unknown;
+  dataFim?: unknown;
+  data_final?: unknown;
+  dataFinal?: unknown;
+  hora_conclusao?: unknown;
+  horaConclusao?: unknown;
+  hora_fim?: unknown;
+  horaFim?: unknown;
+  hora_final?: unknown;
+  horaFinal?: unknown;
+  horimetro?: unknown;
+  horímetro?: unknown;
+  horimetroFinal?: unknown;
+  horimetro_fechamento?: unknown;
+  observacoes?: unknown;
+  observações?: unknown;
+  observacao?: unknown;
+  obs?: unknown;
+  descricao_servico?: unknown;
+  descricaoServico?: unknown;
+  descricao?: unknown;
+  causa_provavel?: unknown;
+  causaProvavel?: unknown;
+  causa?: unknown;
+  acao_realizada?: unknown;
+  acaoRealizada?: unknown;
+  acao?: unknown;
 }
 
 
@@ -202,7 +266,161 @@ export async function fetchOSFromSheet(): Promise<SheetOS[]> {
   return parseSheetResponse(data);
 }
 
-export async function createOSInSheet(payload: CreateOSPayload): Promise<void> {
+export async function createOSInSheet(formData: SaveOSFormData) {
+  const payload: CreateOSPayload = {
+    action: "registrar_os",
+    equipamento: String(
+      formData.equipamento ||
+      formData.tag_equipamento ||
+      formData.tagEquipamento ||
+      formData.tag ||
+      formData.ativo ||
+      ""
+    ).trim(),
+
+    setor: String(
+      formData.setor ||
+      formData.setorEquipamento ||
+      ""
+    ).trim(),
+
+    area: String(
+      formData.area ||
+      formData.área ||
+      formData.modalidade ||
+      formData.especialidade ||
+      ""
+    ).trim(),
+
+    responsavel: String(
+      formData.responsavel ||
+      formData.responsavelTecnico ||
+      formData.tecnico ||
+      formData.colaborador ||
+      ""
+    ).trim(),
+
+    tipo: String(
+      formData.tipo ||
+      formData.tipo_os ||
+      formData.tipoOs ||
+      formData.tipoServico ||
+      ""
+    ).trim(),
+
+    data_inicio: String(
+      formData.data_inicio ||
+      formData.dataInicio ||
+      formData.data_servico ||
+      formData.dataServico ||
+      formData.data ||
+      ""
+    ).trim(),
+
+    hora_inicio: String(
+      formData.hora_inicio ||
+      formData.horaInicio ||
+      formData.hora_servico ||
+      formData.horaServico ||
+      formData.hora ||
+      ""
+    ).trim(),
+
+    data_conclusao: String(
+      formData.data_conclusao ||
+      formData.dataConclusao ||
+      formData.data_fim ||
+      formData.dataFim ||
+      formData.data_final ||
+      formData.dataFinal ||
+      formData.data_inicio ||
+      formData.dataInicio ||
+      formData.data_servico ||
+      formData.dataServico ||
+      formData.data ||
+      ""
+    ).trim(),
+
+    hora_conclusao: String(
+      formData.hora_conclusao ||
+      formData.horaConclusao ||
+      formData.hora_fim ||
+      formData.horaFim ||
+      formData.hora_final ||
+      formData.horaFinal ||
+      ""
+    ).trim(),
+
+    horimetro: String(
+      formData.horimetro ||
+      formData.horímetro ||
+      formData.horimetroFinal ||
+      formData.horimetro_fechamento ||
+      ""
+    ).trim(),
+
+    observacoes: String(
+      formData.observacoes ||
+      formData.observações ||
+      formData.observacao ||
+      formData.obs ||
+      formData.descricao_servico ||
+      formData.descricaoServico ||
+      formData.descricao ||
+      formData.causa_provavel ||
+      formData.causaProvavel ||
+      formData.acao_realizada ||
+      formData.acaoRealizada ||
+      ""
+    ).trim(),
+
+    descricao_servico: String(
+      formData.descricao_servico ||
+      formData.descricaoServico ||
+      formData.descricao ||
+      ""
+    ).trim(),
+
+    causa_provavel: String(
+      formData.causa_provavel ||
+      formData.causaProvavel ||
+      formData.causa ||
+      ""
+    ).trim(),
+
+    acao_realizada: String(
+      formData.acao_realizada ||
+      formData.acaoRealizada ||
+      formData.acao ||
+      ""
+    ).trim()
+  };
+
+  console.log("FORM DATA COMPLETO ANTES DE SALVAR OS:", formData);
+  console.log("PAYLOAD COMPLETO ENVIADO PARA APPS SCRIPT:", payload);
+
+  const camposObrigatorios = [
+    ["Equipamento", payload.equipamento],
+    ["Setor", payload.setor],
+    ["Área", payload.area],
+    ["Responsável", payload.responsavel],
+    ["Tipo", payload.tipo],
+    ["Data Início", payload.data_inicio],
+    ["Hora Início", payload.hora_inicio],
+    ["Data Conclusão", payload.data_conclusao],
+    ["Hora Conclusão", payload.hora_conclusao],
+    ["Horímetro", payload.horimetro],
+    ["Observações", payload.observacoes]
+  ];
+
+  const faltando = camposObrigatorios
+    .filter(([_, value]) => !String(value || "").trim())
+    .map(([label]) => label);
+
+  if (faltando.length > 0) {
+    throw new Error("Campos obrigatórios faltando no formulário: " + faltando.join(", "));
+  }
+
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -212,7 +430,7 @@ export async function createOSInSheet(payload: CreateOSPayload): Promise<void> {
   });
 
   const text = await response.text();
-  console.log("RESPOSTA BRUTA SALVAR OS:", text);
+  console.log("RESPOSTA BRUTA APPS SCRIPT:", text);
 
   let data;
   try {
@@ -222,9 +440,11 @@ export async function createOSInSheet(payload: CreateOSPayload): Promise<void> {
     throw new Error("Resposta inválida do servidor.");
   }
 
-  console.log("RESPOSTA JSON SALVAR OS:", data);
+  console.log("RESPOSTA JSON APPS SCRIPT:", data);
 
-  if (data.success === true) return;
+  if (data.success !== true) {
+    throw new Error(data.message || "Erro ao salvar OS.");
+  }
 
-  throw new Error(String(data.message || "Falha ao cadastrar OS."));
+  return data;
 }

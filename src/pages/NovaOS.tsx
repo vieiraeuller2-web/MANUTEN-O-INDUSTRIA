@@ -1,6 +1,5 @@
 import { memo, useCallback, useMemo, useState, type ChangeEvent, type FormEvent, type HTMLAttributes } from "react";
 import { Link } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import PageHeader from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/hooks/use-toast";
 import { AlertCircle, Check, CheckCircle2, ChevronsUpDown, History, Loader2, RotateCcw, Save } from "lucide-react";
-import { createOSInSheet, type CreateOSPayload, type SheetOS } from "@/lib/sheets-api";
-import { useSheetOS } from "@/hooks/use-sheet-os";
+import type { SheetOS } from "@/lib/sheets-api";
+import { useSaveSheetOS, useSheetOS } from "@/hooks/use-sheet-os";
 import { normalizeText, safeArray, safeString, uniqueSorted } from "@/lib/data-helpers";
 import { cn } from "@/lib/utils";
 
@@ -340,8 +339,8 @@ function FieldError({ message }: { message: string }) {
 }
 
 export default function NovaOS() {
-  const queryClient = useQueryClient();
   const { data: historico } = useSheetOS();
+  const mutation = useSaveSheetOS();
   const [form, setForm] = useState<FormData>(() => initialForm());
   const [errors, setErrors] = useState<FormErrors>({});
   const [saved, setSaved] = useState(false);
@@ -381,46 +380,6 @@ export default function NovaOS() {
     setSaved(false);
   }, []);
 
-  const mutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const payload: CreateOSPayload = {
-        action: "registrar_os",
-        equipamento: safeString(formData.equipamento),
-        setor: safeString(formData.setor),
-        area: safeString(formData.area),
-        responsavel: safeString(formData.responsavel),
-        tipo: safeString(formData.tipo),
-        data_inicio: safeString(formData.data_inicio),
-        hora_inicio: safeString(formData.hora_inicio),
-        data_conclusao: safeString(formData.data_fim),
-        hora_conclusao: safeString(formData.hora_fim),
-        horimetro: safeString(formData.horimetro),
-        observacoes: safeString(formData.observacoes),
-      };
-
-      console.log("FORMULÁRIO OS COMPLETO:", formData);
-      console.log("PAYLOAD COMPLETO OS ENVIADO:", payload);
-
-      await createOSInSheet(payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sheet-os"] });
-      toast({ title: "Registro de OS salvo com sucesso." });
-      setSaved(true);
-      setForm(initialForm());
-      setErrors({});
-    },
-    onError: (err: unknown) => {
-      console.error("Erro ao salvar registro de OS:", err);
-      setSaved(false);
-      toast({
-        title: "Erro ao salvar registro.",
-        description: err instanceof Error ? err.message : "Falha ao cadastrar OS.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -437,7 +396,26 @@ export default function NovaOS() {
         return;
       }
       if (mutation.isPending) return;
-      mutation.mutate({ ...form });
+      mutation.mutate(
+        { ...form },
+        {
+          onSuccess: () => {
+            toast({ title: "Registro de OS salvo com sucesso." });
+            setSaved(true);
+            setForm(initialForm());
+            setErrors({});
+          },
+          onError: (err: unknown) => {
+            console.error("Erro ao salvar registro de OS:", err);
+            setSaved(false);
+            toast({
+              title: "Erro ao salvar registro.",
+              description: err instanceof Error ? err.message : "Erro ao salvar OS.",
+              variant: "destructive",
+            });
+          },
+        },
+      );
     },
     [form, mutation, options],
   );
