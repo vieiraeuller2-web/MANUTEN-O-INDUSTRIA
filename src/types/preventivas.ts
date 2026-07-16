@@ -116,3 +116,53 @@ export interface FiltrosPreventivas {
   periodicidade: string;
   status: string;
 }
+
+export type ResultadoPreventiva = "OK" | "NOK" | "NA";
+
+export interface ResultadoItemPreventiva {
+  id_no: string;
+  resultado: ResultadoPreventiva;
+  observacao: string;
+}
+
+export interface ConcluirPreventivaPayload {
+  action: "preventiva_concluir";
+  id_execucao: string;
+  id_plano: string;
+  data_realizada: string;
+  responsavel: string;
+  apontado_por: string;
+  observacao: string;
+  itens: ResultadoItemPreventiva[];
+}
+
+export interface ResumoConclusaoPreventiva {
+  qtd_itens?: number;
+  qtd_ok?: number;
+  qtd_nok?: number;
+  qtd_na?: number;
+  qtd_pendente?: number;
+}
+
+export interface CicloConclusaoPreventiva {
+  ultima_execucao?: string;
+  proxima_execucao?: string;
+  dias_restantes?: number | string;
+  status_plano?: string;
+  periodicidade?: string;
+}
+
+export interface ConcluirPreventivaResponse {
+  success: true;
+  message?: string;
+  id_execucao?: string;
+  duplicado?: boolean;
+  resumo?: ResumoConclusaoPreventiva;
+  ciclo?: CicloConclusaoPreventiva;
+}
+
+export interface PdfPreventivaResponse {
+  success: true;
+  message?: string;
+  url: string;
+}

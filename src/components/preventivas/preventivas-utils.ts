@@ -151,3 +151,12 @@ export function construirArvorePreventiva(nos: NoPreventiva[]): NoPreventiva[] {
 export function achatarArvorePreventiva(arvore: NoPreventiva[]): NoPreventiva[] {
   return arvore.flatMap((no) => [no, ...achatarArvorePreventiva(no.filhos ?? [])]);
 }
+
+export function obterItensFinaisPreventiva(nos: NoPreventiva[]): NoPreventiva[] {
+  return nos
+    .filter((no) => {
+      if (valorEhNao(no.ativo)) return false;
+      return normalizeText(no.tipo_no) === "item_verificacao" || Boolean(safeString(no.item_verificacao));
+    })
+    .sort((a, b) => compararOrdenados(a, b, safeString(a.nome_no), safeString(b.nome_no)));
+}

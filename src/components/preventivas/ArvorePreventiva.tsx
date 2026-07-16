@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { ListTree } from "lucide-react";
+import { ClipboardCheck, FileDown, ListTree, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { NoPreventiva as NoPreventivaTipo, PlanoPreventiva } from "@/types/preventivas";
 import DetalhePlanoPreventivo from "./DetalhePlanoPreventivo";
 import NoPreventiva from "./NoPreventiva";
@@ -14,6 +15,10 @@ interface ArvorePreventivaProps {
   isLoading: boolean;
   error?: Error | null;
   onTentarNovamente: () => void;
+  onGerarPdfExecucao?: () => void;
+  onRegistrarPreventiva?: () => void;
+  isGerandoPdf?: boolean;
+  podeRegistrar?: boolean;
 }
 
 export default function ArvorePreventiva({
@@ -23,12 +28,16 @@ export default function ArvorePreventiva({
   isLoading,
   error,
   onTentarNovamente,
+  onGerarPdfExecucao,
+  onRegistrarPreventiva,
+  isGerandoPdf = false,
+  podeRegistrar = false,
 }: ArvorePreventivaProps) {
   const [detalhe, setDetalhe] = useState<NoPreventivaTipo | null>(null);
   const arvore = useMemo(() => construirArvorePreventiva(nos), [nos]);
   return (
     <section className="stat-card min-w-0 p-3 sm:p-4" aria-labelledby="titulo-checklist">
-      <div className="mb-4 flex min-w-0 items-start justify-between gap-3">
+      <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">Etapa 4</p>
           <h2 id="titulo-checklist" className="flex items-center gap-2 text-base">
@@ -36,7 +45,20 @@ export default function ArvorePreventiva({
           </h2>
           {plano?.titulo_plano && <p className="mt-1 break-words text-xs text-muted-foreground">{plano.titulo_plano}</p>}
         </div>
-        {planoSelecionado && !isLoading && !error && <Badge variant="secondary" className="shrink-0">{nos.length} registros</Badge>}
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {planoSelecionado && !isLoading && !error && <Badge variant="secondary">{nos.length} registros</Badge>}
+          {planoSelecionado && plano && onGerarPdfExecucao && (
+            <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={onGerarPdfExecucao} disabled={isGerandoPdf}>
+              {isGerandoPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+              {isGerandoPdf ? "Gerando..." : "PDF de Execução"}
+            </Button>
+          )}
+          {planoSelecionado && plano && onRegistrarPreventiva && (
+            <Button type="button" size="sm" className="h-8 gap-1.5 text-xs" onClick={onRegistrarPreventiva} disabled={!podeRegistrar}>
+              <ClipboardCheck className="h-3.5 w-3.5" /> Registrar Preventiva
+            </Button>
+          )}
+        </div>
       </div>
 
       {!planoSelecionado ? (

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useIsFetching, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileDown, Loader2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import RefreshButton from "@/components/RefreshButton";
 import ArvorePreventiva from "@/components/preventivas/ArvorePreventiva";
@@ -8,6 +8,7 @@ import AtivosPreventivas from "@/components/preventivas/AtivosPreventivas";
 import PlanosPreventivas from "@/components/preventivas/PlanosPreventivas";
 import PreventivasFiltros from "@/components/preventivas/PreventivasFiltros";
 import PreventivasResumo from "@/components/preventivas/PreventivasResumo";
+import RegistrarPreventiva from "@/components/preventivas/RegistrarPreventiva";
 import SetoresPreventivas from "@/components/preventivas/SetoresPreventivas";
 import {
   TODOS_FILTRO,
@@ -15,10 +16,13 @@ import {
   formatarModalidadePlano,
   formatarPeriodicidadePlano,
   formatarStatusPlano,
+  obterItensFinaisPreventiva,
   valorEhNao,
 } from "@/components/preventivas/preventivas-utils";
 import { Button } from "@/components/ui/button";
-import { normalizeText, uniqueSorted } from "@/lib/data-helpers";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { normalizeText, safeString, uniqueSorted } from "@/lib/data-helpers";
 import { cn } from "@/lib/utils";
 import {
   buscarAtivosPreventivas,
@@ -26,8 +30,13 @@ import {
   buscarPlanosPreventivas,
   buscarResumoPreventivas,
   buscarSetoresPreventivas,
+  gerarPdfAtivoPreventiva,
+  gerarPdfDiretoriaPreventivas,
+  gerarPdfExecucaoPreventiva,
+  gerarPdfGeralPreventivas,
+  gerarPdfSetorPreventiva,
 } from "@/services/preventivasApi";
-import type { FiltrosPreventivas } from "@/types/preventivas";
+import type { ConcluirPreventivaResponse, FiltrosPreventivas, PdfPreventivaResponse } from "@/types/preventivas";
 
 const CHAVE_PREVENTIVAS = ["preventivas-api"] as const;
 const TEMPO_CACHE = 30 * 60 * 1000;
@@ -45,11 +54,43 @@ function erroConsulta(error: unknown): Error | null {
   return error instanceof Error ? error : error ? new Error(String(error)) : null;
 }
 
+type ChavePdf = "geral" | "diretoria" | "setor" | "ativo" | "execucao";
+
+function abrirPdf(response: PdfPreventivaResponse) {
+  const link = document.createElement("a");
+  link.href = response.url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function BotaoPdf({
+  label,
+  loading,
+  onClick,
+}: {
+  label: string;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={loading} onClick={onClick}>
+      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+      {loading ? "Gerando..." : label}
+    </Button>
+  );
+}
+
 export default function PlanosManutencao() {
   const queryClient = useQueryClient();
   const fluxoRef = useRef<HTMLDivElement>(null);
   const [filtros, setFiltros] = useState<FiltrosPreventivas>(filtrosIniciais);
   const [idPlanoSelecionado, setIdPlanoSelecionado] = useState("");
+  const [pdfsCarregando, setPdfsCarregando] = useState<Set<ChavePdf>>(() => new Set());
+  const [registroAberto, setRegistroAberto] = useState(false);
+  const [usuarioAtual, setUsuarioAtual] = useState("");
 
   const idSetor = filtros.setor === TODOS_FILTRO ? "" : filtros.setor;
   const idAtivo = filtros.ativo === TODOS_FILTRO ? "" : filtros.ativo;
@@ -140,10 +181,10 @@ export default function PlanosManutencao() {
   );
 
   useEffect(() => {
-    if (idPlanoSelecionado && planosQuery.isSuccess && !planosVisiveis.some((plano) => plano.id_plano === idPlanoSelecionado)) {
+    if (!registroAberto && idPlanoSelecionado && planosQuery.isSuccess && !planosVisiveis.some((plano) => plano.id_plano === idPlanoSelecionado)) {
       setIdPlanoSelecionado("");
     }
-  }, [idPlanoSelecionado, planosQuery.isSuccess, planosVisiveis]);
+  }, [idPlanoSelecionado, planosQuery.isSuccess, planosVisiveis, registroAberto]);
 
   const planoDaLista = planos.find((plano) => plano.id_plano === idPlanoSelecionado);
   const planoExibido = planoCompletoQuery.data?.plano ?? planoDaLista;
@@ -152,6 +193,27 @@ export default function PlanosManutencao() {
     if (!completo) return [];
     return completo.itens.length ? completo.itens : achatarArvorePreventiva(completo.arvore);
   }, [planoCompletoQuery.data]);
+  const itensFinais = useMemo(() => obterItensFinaisPreventiva(nosChecklist), [nosChecklist]);
+  const setorSelecionado = setores.find((setor) => setor.id_setor === idSetor);
+  const ativoSelecionado = ativos.find((ativo) => ativo.id_ativo === idAtivo);
+
+  useEffect(() => {
+    let montado = true;
+    void supabase.auth.getSession()
+      .then(({ data }) => {
+        const usuario = data.session?.user;
+        if (!usuario || !montado) return;
+        const metadados = usuario.user_metadata;
+        const nome = safeString(
+          metadados?.full_name || metadados?.name || metadados?.nome || usuario.email,
+        );
+        setUsuarioAtual(nome);
+      })
+      .catch(() => undefined);
+    return () => {
+      montado = false;
+    };
+  }, []);
 
   const etapa = idPlanoSelecionado ? 4 : idAtivo ? 3 : idSetor ? 2 : 1;
 
@@ -217,6 +279,40 @@ export default function PlanosManutencao() {
     void queryClient.invalidateQueries({ queryKey: CHAVE_PREVENTIVAS, refetchType: "active" });
   };
 
+  const executarPdf = async (
+    chave: ChavePdf,
+    rotulo: string,
+    gerar: () => Promise<PdfPreventivaResponse>,
+  ) => {
+    setPdfsCarregando((atuais) => new Set(atuais).add(chave));
+    toast({ title: `Gerando ${rotulo}...`, description: "O arquivo será aberto em uma nova aba quando estiver pronto." });
+    try {
+      const response = await gerar();
+      abrirPdf(response);
+      toast({ title: `${rotulo} gerado com sucesso.`, description: response.message });
+    } catch (error) {
+      toast({
+        title: `Falha ao gerar ${rotulo}.`,
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setPdfsCarregando((atuais) => {
+        const proximos = new Set(atuais);
+        proximos.delete(chave);
+        return proximos;
+      });
+    }
+  };
+
+  const atualizarAposRegistro = async (_response: ConcluirPreventivaResponse) => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: [...CHAVE_PREVENTIVAS, "resumo"], refetchType: "active" }),
+      queryClient.invalidateQueries({ queryKey: [...CHAVE_PREVENTIVAS, "planos", idAtivo], refetchType: "active" }),
+      queryClient.invalidateQueries({ queryKey: [...CHAVE_PREVENTIVAS, "plano-completo", idPlanoSelecionado], refetchType: "active" }),
+    ]);
+  };
+
   return (
     <div className="page-container">
       <div className="mb-4 flex flex-col gap-3 pr-10 sm:flex-row sm:items-start sm:justify-between">
@@ -225,6 +321,16 @@ export default function PlanosManutencao() {
           subtitle="Gerenciamento e consulta dos planos preventivos por setor, ativo, modalidade e periodicidade."
         />
         <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+          <BotaoPdf
+            label="PDF Geral"
+            loading={pdfsCarregando.has("geral")}
+            onClick={() => void executarPdf("geral", "PDF Geral", gerarPdfGeralPreventivas)}
+          />
+          <BotaoPdf
+            label="PDF Diretoria"
+            loading={pdfsCarregando.has("diretoria")}
+            onClick={() => void executarPdf("diretoria", "PDF Diretoria", gerarPdfDiretoriaPreventivas)}
+          />
           <RefreshButton onClick={atualizar} isFetching={consultasEmAndamento > 0} />
           <span className="text-[11px] text-muted-foreground" aria-live="polite">
             {ultimaAtualizacao
@@ -252,6 +358,34 @@ export default function PlanosManutencao() {
           onChange={alterarFiltro}
           onLimpar={limparFiltros}
         />
+
+        {(idSetor || idAtivo) && (
+          <div className="stat-card flex flex-wrap items-center justify-between gap-3 p-3">
+            <div>
+              <p className="text-xs font-semibold text-foreground">Ações do contexto selecionado</p>
+              <p className="text-[11px] text-muted-foreground">
+                {setorSelecionado?.nome_setor}
+                {ativoSelecionado ? ` · ${ativoSelecionado.tag_ativo || "TAG NÃO CADASTRADA"} · ${ativoSelecionado.nome_ativo}` : ""}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {idSetor && (
+                <BotaoPdf
+                  label="PDF do Setor"
+                  loading={pdfsCarregando.has("setor")}
+                  onClick={() => void executarPdf("setor", "PDF do Setor", () => gerarPdfSetorPreventiva(idSetor))}
+                />
+              )}
+              {idAtivo && (
+                <BotaoPdf
+                  label="PDF do Ativo"
+                  loading={pdfsCarregando.has("ativo")}
+                  onClick={() => void executarPdf("ativo", "PDF do Ativo", () => gerarPdfAtivoPreventiva(idAtivo))}
+                />
+              )}
+            </div>
+          </div>
+        )}
 
         <div ref={fluxoRef} className="scroll-mt-4">
           {etapa > 1 && (
@@ -303,10 +437,29 @@ export default function PlanosManutencao() {
               isLoading={planoCompletoQuery.isLoading && Boolean(idPlanoSelecionado)}
               error={erroConsulta(planoCompletoQuery.error)}
               onTentarNovamente={() => void planoCompletoQuery.refetch()}
+              onGerarPdfExecucao={() => void executarPdf(
+                "execucao",
+                "PDF de Execução",
+                () => gerarPdfExecucaoPreventiva(idPlanoSelecionado),
+              )}
+              onRegistrarPreventiva={() => setRegistroAberto(true)}
+              isGerandoPdf={pdfsCarregando.has("execucao")}
+              podeRegistrar={Boolean(planoExibido && itensFinais.length && !planoCompletoQuery.isLoading && !planoCompletoQuery.error)}
             />
           </div>
         </div>
       </div>
+
+      <RegistrarPreventiva
+        open={registroAberto}
+        plano={planoExibido}
+        setor={planoCompletoQuery.data?.setor ?? setorSelecionado}
+        ativo={planoCompletoQuery.data?.ativo ?? ativoSelecionado}
+        nos={nosChecklist}
+        apontadoPorPadrao={usuarioAtual}
+        onOpenChange={setRegistroAberto}
+        onSuccess={atualizarAposRegistro}
+      />
     </div>
   );
 }
