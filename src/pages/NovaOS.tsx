@@ -31,6 +31,7 @@ type FormField = keyof FormData;
 type FormErrors = Partial<Record<FormField, string>>;
 
 const TIPO_OPTIONS = ["CORRETIVA", "COR. PRO.", "PREVENTIVA", "COR. EQUIP. RESERV."];
+const RESPONSAVEL_OPTIONS = ["LUIS PEDRO"];
 const REQUIRED_FIELDS: FormField[] = [
   "equipamento",
   "setor",
@@ -341,7 +342,7 @@ export default function NovaOS() {
       equipamentos: uniqueSorted(listaSegura.map((os) => os.equipamento)),
       setores: uniqueSorted(listaSegura.map((os) => os.setor)),
       areas: uniqueSorted(listaSegura.map((os) => os.area)),
-      responsaveis: uniqueSorted(listaSegura.map((os) => os.responsavel)),
+      responsaveis: uniqueSorted([...RESPONSAVEL_OPTIONS, ...listaSegura.map((os) => os.responsavel)]),
       tipos: uniqueSorted([...TIPO_OPTIONS, ...listaSegura.map((os) => os.tipo)]),
     }),
     [listaSegura],
