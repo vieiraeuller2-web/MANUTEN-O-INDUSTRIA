@@ -31,7 +31,7 @@ type FormField = keyof FormData;
 type FormErrors = Partial<Record<FormField, string>>;
 
 const TIPO_OPTIONS = ["CORRETIVA", "COR. PRO.", "PREVENTIVA", "COR. EQUIP. RESERV."];
-const RESPONSAVEL_OPTIONS = ["LUIS PEDRO"];
+const RESPONSAVEL_OPTIONS = ["GABRIEL", "LUIS PEDRO"];
 const REQUIRED_FIELDS: FormField[] = [
   "equipamento",
   "setor",
