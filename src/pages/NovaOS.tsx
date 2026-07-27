@@ -103,6 +103,8 @@ function validate(form: FormData, options: SelectOptions): FormErrors {
 
   if (estaPreenchido(form.horimetro) && Number.isNaN(Number(form.horimetro))) {
     errors.horimetro = "Informe um número válido";
+  } else if (estaPreenchido(form.horimetro) && Number(form.horimetro) < 0) {
+    errors.horimetro = "O horímetro não pode ser negativo";
   }
 
   if (!isListedValue(form.equipamento, options.equipamentos)) {
@@ -137,6 +139,8 @@ interface TextFieldProps {
   type?: string;
   required?: boolean;
   inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];
+  min?: number;
+  step?: string;
 }
 
 const TextField = memo(function TextField({
@@ -148,6 +152,8 @@ const TextField = memo(function TextField({
   type = "text",
   required,
   inputMode,
+  min,
+  step,
 }: TextFieldProps) {
   const handleChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => onChange(field, event.target.value),
@@ -166,6 +172,8 @@ const TextField = memo(function TextField({
         value={value}
         onChange={handleChange}
         inputMode={inputMode}
+        min={min}
+        step={step}
         className={error ? "border-destructive ring-1 ring-destructive/30" : "border-l-2 border-l-primary/40"}
         aria-invalid={!!error}
       />
@@ -334,6 +342,7 @@ export default function NovaOS() {
   const [form, setForm] = useState<FormData>(() => initialForm());
   const [errors, setErrors] = useState<FormErrors>({});
   const [saved, setSaved] = useState(false);
+  const [savedHorimetro, setSavedHorimetro] = useState("");
   const submittingRef = useRef(false);
 
   const listaSegura = safeArray<SheetOS>(historico);
@@ -363,13 +372,24 @@ export default function NovaOS() {
     setForm(initialForm());
     setErrors({});
     setSaved(false);
+    setSavedHorimetro("");
   }, []);
 
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       setSaved(false);
-      const nextErrors = validate(form, options);
+      setSavedHorimetro("");
+
+      // Lê o valor realmente visível no campo no instante do toque.
+      // Isso evita enviar um estado React atrasado em navegadores móveis.
+      const nativeForm = new FormData(event.currentTarget);
+      const submittedForm: FormData = {
+        ...form,
+        horimetro: String(nativeForm.get("horimetro") ?? form.horimetro).trim(),
+      };
+
+      const nextErrors = validate(submittedForm, options);
       setErrors(nextErrors);
       const firstError = Object.values(nextErrors)[0];
       if (firstError) {
@@ -383,11 +403,16 @@ export default function NovaOS() {
       if (mutation.isPending || submittingRef.current) return;
       submittingRef.current = true;
       mutation.mutate(
-        { ...form },
+        submittedForm,
         {
-          onSuccess: () => {
-            toast({ title: "Registro de OS salvo com sucesso." });
+          onSuccess: (result) => {
+            const confirmedHorimeter = result.payloadEnviado.horimetro;
+            toast({
+              title: "Registro de OS salvo com sucesso.",
+              description: `Horímetro ${confirmedHorimeter} confirmado no envio.`,
+            });
             setSaved(true);
+            setSavedHorimetro(confirmedHorimeter);
             setForm(initialForm());
             setErrors({});
           },
@@ -423,7 +448,7 @@ export default function NovaOS() {
       {saved && (
         <div className="mb-4 rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Registro de OS salvo com sucesso.
+          Registro de OS salvo. Horímetro {savedHorimetro} confirmado.
         </div>
       )}
 
@@ -444,6 +469,8 @@ export default function NovaOS() {
               field="horimetro"
               type="number"
               inputMode="decimal"
+              min={0}
+              step="any"
               value={form.horimetro}
               error={errors.horimetro}
               onChange={setField}

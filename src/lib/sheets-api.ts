@@ -26,6 +26,8 @@ async function authHeaders() {
 }
 
 export interface SheetOS {
+  id_os?: string;
+  numero_os?: string;
   equipamento: string;
   setor: string;
   area: string;
@@ -42,6 +44,8 @@ export interface SheetOS {
 
 export interface CreateOSPayload {
   action: "registrar_os";
+  client_submission_id: string;
+  cliente_versao: "web-os-v2";
   equipamento: string;
   setor: string;
   area: string;
@@ -52,6 +56,7 @@ export interface CreateOSPayload {
   data_conclusao: string;
   hora_conclusao: string;
   horimetro: string;
+  horimetro_informado: string;
   observacoes: string;
 }
 
@@ -87,48 +92,68 @@ export interface SaveOSFormData {
   horaFinal?: unknown;
   hora_final?: unknown;
   horimetro?: unknown;
+  client_submission_id?: unknown;
   observacoes?: unknown;
   observacao?: unknown;
   obs?: unknown;
 }
 
 
-// Mapeia nomes de coluna da planilha -> campos do app
-const HEADER_MAP: Record<string, keyof SheetOS> = {
+type CanonicalSheetKey =
+  | "id_os"
+  | "numero_os"
+  | "equipamento"
+  | "setor"
+  | "area"
+  | "responsavel"
+  | "tipo"
+  | "data_inicio"
+  | "hora_inicio"
+  | "data_fim"
+  | "hora_fim"
+  | "horimetro"
+  | "observacoes";
+
+function normalizeColumnName(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+// Mapeia nomes de coluna da planilha -> campos do app.
+// As chaves estão sem acento para aceitar tanto os títulos visíveis
+// quanto os nomes normalizados devolvidos pela API.
+const HEADER_MAP: Record<string, CanonicalSheetKey> = {
+  id: "id_os",
+  id_os: "id_os",
+  os: "id_os",
+  numero_os: "numero_os",
   equipamento: "equipamento",
   setor: "setor",
   area: "area",
-  "área": "area",
   responsavel: "responsavel",
-  "responsável": "responsavel",
   tipo: "tipo",
   data_inicio: "data_inicio",
-  "data início": "data_inicio",
-  "data inicio": "data_inicio",
   hora_inicio: "hora_inicio",
-  "hora início": "hora_inicio",
-  "hora inicio": "hora_inicio",
   data_fim: "data_fim",
-  "data fim": "data_fim",
-  "data conclusão": "data_fim",
-  "data conclusao": "data_fim",
+  data_conclusao: "data_fim",
   hora_fim: "hora_fim",
-  "hora fim": "hora_fim",
-  "hora conclusão": "hora_fim",
-  "hora conclusao": "hora_fim",
+  hora_conclusao: "hora_fim",
   horimetro: "horimetro",
-  "horímetro": "horimetro",
-  "observações": "observacoes",
+  observacao: "observacoes",
   observacoes: "observacoes",
 };
 
-function normalizeKey(k: string): keyof SheetOS | null {
+function normalizeKey(k: string): CanonicalSheetKey | null {
   if (!k) return null;
-  const lower = String(k).trim().toLowerCase();
-  return HEADER_MAP[lower] ?? null;
+  return HEADER_MAP[normalizeColumnName(k)] ?? null;
 }
 
-function normalizeDate(v: any): string {
+function normalizeDate(v: unknown): string {
   if (v == null || v === "") return "";
   const s = String(v).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
@@ -144,31 +169,53 @@ function normalizeDate(v: any): string {
   return s;
 }
 
-function normalizeTime(v: any): string {
+function normalizeTime(v: unknown): string {
   if (v == null || v === "") return "";
   const hora = normalizarHoraSheets(v);
   return hora === "—" ? "" : hora;
 }
 
-function getRawValue(row: any, header: string, normalized?: keyof SheetOS) {
+function getRawValue(row: Record<string, unknown>, ...aliases: string[]) {
   if (!row || typeof row !== "object") return undefined;
-  if (header in row) return row[header];
-  if (normalized && normalized in row) return row[normalized];
-  const lowerHeader = header.toLowerCase();
-  const normalizedLower = normalized ? String(normalized).toLowerCase() : "";
-  const found = Object.keys(row).find((k) => {
-    const lk = k.toLowerCase();
-    return lk === lowerHeader || (!!normalizedLower && lk === normalizedLower);
-  });
-  return found ? row[found] : undefined;
+  const normalizedEntries = new Map(
+    Object.entries(row).map(([key, value]) => [normalizeColumnName(key), value]),
+  );
+
+  for (const alias of aliases) {
+    if (Object.prototype.hasOwnProperty.call(row, alias)) return row[alias];
+    const normalizedAlias = normalizeColumnName(alias);
+    if (normalizedEntries.has(normalizedAlias)) return normalizedEntries.get(normalizedAlias);
+  }
+
+  return undefined;
 }
 
-function rowToOS(row: any[], headerKeys: (keyof SheetOS | null)[]): SheetOS {
-  const obj: SheetOS = {
-    equipamento: "", setor: "", area: "", responsavel: "", tipo: "",
-    data_inicio: "", hora_inicio: "", data_fim: "", hora_fim: "",
-    horimetro: "", observacoes: "",
+function emptySheetOS(): SheetOS {
+  return {
+    equipamento: "",
+    setor: "",
+    area: "",
+    responsavel: "",
+    tipo: "",
+    data_inicio: "",
+    hora_inicio: "",
+    data_fim: "",
+    hora_fim: "",
+    horimetro: "",
+    observacoes: "",
   };
+}
+
+function normalizeHorimeterValue(raw: unknown): string | number {
+  if (raw == null || raw === "") return "";
+  if (typeof raw === "number") return raw;
+  const text = String(raw).trim();
+  const parsed = Number(text.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : text;
+}
+
+function rowToOS(row: unknown[], headerKeys: (CanonicalSheetKey | null)[]): SheetOS {
+  const obj = emptySheetOS();
   headerKeys.forEach((key, i) => {
     if (!key) return;
     const raw = row[i];
@@ -178,18 +225,24 @@ function rowToOS(row: any[], headerKeys: (keyof SheetOS | null)[]): SheetOS {
     } else if (key === "hora_inicio" || key === "hora_fim") {
       obj[key] = normalizeTime(raw);
     } else if (key === "horimetro") {
-      obj[key] = typeof raw === "number" ? raw : Number(raw) || raw;
+      obj[key] = normalizeHorimeterValue(raw);
     } else {
-      (obj as any)[key] = String(raw);
+      obj[key] = String(raw);
     }
   });
   return obj;
 }
 
-function parseSheetResponse(data: any): SheetOS[] {
+export function parseSheetResponse(data: unknown): SheetOS[] {
+  const response = data as Record<string, any> | null;
+
   // Erro controlado vindo do proxy (ex.: Apps Script sem doGet/doPost)
-  if (data?.ok === false || (data?.error && !data?.rows && !data?.data && !data?.values)) {
-    throw new Error(String(data.error || "Não foi possível carregar os dados."));
+  if (
+    response?.ok === false ||
+    response?.success === false ||
+    (response?.error && !response?.rows && !response?.data && !response?.values)
+  ) {
+    throw new Error(String(response.error || "Não foi possível carregar os dados."));
   }
 
   // Caso 1: array de arrays (o que sua planilha devolve)
@@ -199,20 +252,41 @@ function parseSheetResponse(data: any): SheetOS[] {
   }
   // Caso 2: array de objetos
   if (Array.isArray(data) && data.length > 0 && typeof data[0] === "object") {
-    return data.map((row: any) => {
-      const safeRow = row && typeof row === "object" ? row : {};
+    return data.map((row: unknown) => {
+      const safeRow = row && typeof row === "object"
+        ? row as Record<string, unknown>
+        : {};
       const os: SheetOS = {
-        equipamento: String(getRawValue(safeRow, "Equipamento", "equipamento") ?? ""),
-        setor: String(getRawValue(safeRow, "Setor", "setor") ?? ""),
-        area: String(getRawValue(safeRow, "Área", "area") ?? ""),
-        responsavel: String(getRawValue(safeRow, "Responsável", "responsavel") ?? ""),
-        tipo: String(getRawValue(safeRow, "Tipo", "tipo") ?? ""),
-        data_inicio: normalizeDate(getRawValue(safeRow, "Data Início", "data_inicio")),
-        hora_inicio: normalizeTime(getRawValue(safeRow, "Hora Início", "hora_inicio")),
-        data_fim: normalizeDate(getRawValue(safeRow, "Data Conclusão", "data_fim") ?? getRawValue(safeRow, "Data Fim", "data_fim")),
-        hora_fim: normalizeTime(getRawValue(safeRow, "Hora Conclusão", "hora_fim") ?? getRawValue(safeRow, "Hora Fim", "hora_fim")),
-        horimetro: getRawValue(safeRow, "Horímetro", "horimetro") ?? "",
-        observacoes: String(getRawValue(safeRow, "Observações", "observacoes") ?? ""),
+        id_os: String(getRawValue(safeRow, "id_os", "id os", "OS", "ID") ?? ""),
+        numero_os: String(getRawValue(safeRow, "numero_os", "numero os", "número os") ?? ""),
+        equipamento: String(getRawValue(safeRow, "equipamento", "Equipamento") ?? ""),
+        setor: String(getRawValue(safeRow, "setor", "Setor") ?? ""),
+        area: String(getRawValue(safeRow, "area", "Área") ?? ""),
+        responsavel: String(getRawValue(safeRow, "responsavel", "Responsável") ?? ""),
+        tipo: String(getRawValue(safeRow, "tipo", "Tipo") ?? ""),
+        data_inicio: normalizeDate(getRawValue(safeRow, "data_inicio", "Data Início")),
+        hora_inicio: normalizeTime(getRawValue(safeRow, "hora_inicio", "Hora Início")),
+        data_fim: normalizeDate(getRawValue(
+          safeRow,
+          "data_fim",
+          "data_conclusao",
+          "Data Fim",
+          "Data Conclusão",
+        )),
+        hora_fim: normalizeTime(getRawValue(
+          safeRow,
+          "hora_fim",
+          "hora_conclusao",
+          "Hora Fim",
+          "Hora Conclusão",
+        )),
+        horimetro: normalizeHorimeterValue(getRawValue(safeRow, "horimetro", "Horímetro")),
+        observacoes: String(getRawValue(
+          safeRow,
+          "observacoes",
+          "observacao",
+          "Observações",
+        ) ?? ""),
       };
       Object.entries(safeRow).forEach(([k, v]) => {
         if (!(k in os)) (os as any)[k] = v;
@@ -221,9 +295,9 @@ function parseSheetResponse(data: any): SheetOS[] {
     });
   }
   // Caso 3: { rows: [...] } / { data: [...] }
-  if (data?.rows) return parseSheetResponse(data.rows);
-  if (data?.data) return parseSheetResponse(data.data);
-  if (data?.values) return parseSheetResponse(data.values);
+  if (response?.rows) return parseSheetResponse(response.rows);
+  if (response?.data) return parseSheetResponse(response.data);
+  if (response?.values) return parseSheetResponse(response.values);
   return [];
 }
 
@@ -237,7 +311,22 @@ export async function fetchOSFromSheet(): Promise<SheetOS[]> {
   return parseSheetResponse(data);
 }
 
-export async function createOSInSheet(formData: SaveOSFormData) {
+function createSubmissionId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `web-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function normalizeHorimeterForPayload(value: unknown): string {
+  const text = String(value ?? "").trim().replace(",", ".");
+  if (!text) return "";
+  const parsed = Number(text);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error("Horímetro inválido. Informe um número maior ou igual a zero.");
+  }
+  return text;
+}
+
+export function buildCreateOSPayload(formData: SaveOSFormData): CreateOSPayload {
   const dataConclusao = String(
     formData.dataConclusao ??
     formData.data_conclusao ??
@@ -258,8 +347,11 @@ export async function createOSInSheet(formData: SaveOSFormData) {
     ""
   ).trim();
 
-  const payload: CreateOSPayload = {
+  const horimetro = normalizeHorimeterForPayload(formData.horimetro);
+  return {
     action: "registrar_os",
+    client_submission_id: String(formData.client_submission_id || createSubmissionId()),
+    cliente_versao: "web-os-v2",
     equipamento: String(
       formData.equipamento ||
       formData.tagEquipamento ||
@@ -307,30 +399,36 @@ export async function createOSInSheet(formData: SaveOSFormData) {
 
     hora_conclusao: horaConclusao,
 
-    horimetro: String(formData.horimetro ?? "").trim(),
+    horimetro,
+
+    // Campo redundante para auditoria: permite recuperar exatamente o valor
+    // visto no formulário mesmo que o mapeamento do backend volte a mudar.
+    horimetro_informado: horimetro,
 
     observacoes: String(
       formData.observacoes ||
       formData.observacao ||
       formData.obs ||
       ""
-    ).trim()
+    ).trim(),
   };
+}
 
-  console.log("ESTADO COMPLETO DA OS:", formData);
+function getConfirmedHorimeter(data: Record<string, any>): unknown {
+  const candidates = [
+    data.valores_confirmados,
+    data.resultado?.valores_confirmados,
+    data.registro,
+    data.data?.valores_confirmados,
+    data.data?.registro,
+  ];
+  return candidates.find((candidate) =>
+    candidate && Object.prototype.hasOwnProperty.call(candidate, "horimetro")
+  )?.horimetro;
+}
 
-  console.log("CAMPOS DE CONCLUSÃO ANTES DO PAYLOAD:", {
-    dataConclusao: formData.dataConclusao,
-    data_conclusao: formData.data_conclusao,
-    dataFim: formData.dataFim,
-    data_fim: formData.data_fim,
-    horaConclusao: formData.horaConclusao,
-    hora_conclusao: formData.hora_conclusao,
-    horaFim: formData.horaFim,
-    hora_fim: formData.hora_fim
-  });
-
-  console.log("PAYLOAD FINAL DA OS:", payload);
+export async function createOSInSheet(formData: SaveOSFormData) {
+  const payload = buildCreateOSPayload(formData);
 
   const estaPreenchido = (valor: unknown) =>
     valor !== null &&
@@ -369,7 +467,7 @@ export async function createOSInSheet(formData: SaveOSFormData) {
 
   const text = await response.text();
 
-  let data;
+  let data: Record<string, any>;
   try {
     data = JSON.parse(text);
   } catch (error) {
@@ -381,5 +479,16 @@ export async function createOSInSheet(formData: SaveOSFormData) {
     throw new Error(data.message || "Erro ao salvar registro.");
   }
 
-  return data;
+  const confirmedHorimeter = getConfirmedHorimeter(data);
+  if (confirmedHorimeter !== undefined) {
+    const expected = Number(payload.horimetro);
+    const confirmed = Number(String(confirmedHorimeter).replace(",", "."));
+    if (!Number.isFinite(confirmed) || confirmed !== expected) {
+      throw new Error(
+        `O servidor não confirmou o horímetro informado (${payload.horimetro}). O formulário foi preservado para nova tentativa.`,
+      );
+    }
+  }
+
+  return { ...data, payloadEnviado: payload };
 }

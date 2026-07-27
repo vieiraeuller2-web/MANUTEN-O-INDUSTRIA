@@ -66,7 +66,7 @@ function dataToIso(value: unknown): string {
 }
 
 function normalizeOS(os: SheetOS, index: number): NormalizedOS {
-  const numero = osField(os, "numero_os" as keyof SheetOS, "Numero OS", "Número OS", "Nº OS", "N° OS", "OS", "ID", "id");
+  const numero = osField(os, "numero_os", "id_os", "Numero OS", "Número OS", "Nº OS", "N° OS", "OS", "ID", "id");
   const equipamento = osField(os, "equipamento", "Equipamento", "EQUIPAMENTO");
   const setor = osField(os, "setor", "Setor", "SETOR");
   const area = osField(os, "area", "Área", "Area", "AREA");
@@ -74,8 +74,8 @@ function normalizeOS(os: SheetOS, index: number): NormalizedOS {
   const tipo = osField(os, "tipo", "Tipo", "TIPO");
   const dataInicio = osField(os, "data_inicio", "Data Início", "Data Inicio", "Data inicial", "DATA_INICIO");
   const horaInicio = osField(os, "hora_inicio", "Hora Início", "Hora Inicio", "HORA_INICIO");
-  const dataFim = osField(os, "data_fim", "Data Fim", "Data Conclusão", "DATA_FIM");
-  const horaFim = osField(os, "hora_fim", "Hora Fim", "Hora Conclusão", "HORA_FIM");
+  const dataFim = osField(os, "data_fim", "data_conclusao", "Data Fim", "Data Conclusão", "DATA_FIM");
+  const horaFim = osField(os, "hora_fim", "hora_conclusao", "Hora Fim", "Hora Conclusão", "HORA_FIM");
   const horimetro = osField(os, "horimetro", "Horímetro", "Horimetro", "HORIMETRO");
   const observacoes = osField(os, "observacoes", "Observações", "OBSERVACOES");
   const sortTime = parseDataHoraLocal(dataInicio, horaInicio || "00:00")?.getTime() ?? -Infinity;
