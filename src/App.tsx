@@ -18,6 +18,7 @@ const ServicosExternos = lazy(() => import("./pages/ServicosExternos"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
 const Obras = lazy(() => import("./pages/Obras"));
 const PlanosManutencao = lazy(() => import("./pages/PlanosManutencao"));
+const EquipamentoPublico = lazy(() => import("./pages/EquipamentoPublico"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -85,6 +86,7 @@ const App = () => (
       <Toaster />
       <BrowserRouter>
         <Routes>
+          <Route path="/equipamento/:codigo" element={<Suspense fallback={<PageFallback />}><EquipamentoPublico /></Suspense>} />
           <Route path="/" element={<Layout><Lubrificacao /></Layout>} />
           <Route path="/lubrificacao" element={<Layout><Lubrificacao /></Layout>} />
           <Route path="/os/nova" element={<Layout><NovaOS /></Layout>} />
