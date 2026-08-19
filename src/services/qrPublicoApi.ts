@@ -243,3 +243,131 @@ export async function buscarChecklistPreventiva(
     itens: Array.isArray(resposta.data.itens) ? resposta.data.itens : [],
   };
 }
+
+// ---------------------------------------------------------
+// NOVA API - FLUXO DE ORDEM DE SERVIÇO PELO QR CODE
+// ---------------------------------------------------------
+
+async function enviarPost<T>(payload: Record<string, unknown>, signal?: AbortSignal): Promise<RespostaApi<T>> {
+  const controller = new AbortController();
+  let expirou = false;
+  const cancelar = () => controller.abort();
+  signal?.addEventListener("abort", cancelar, { once: true });
+  
+  const timeout = window.setTimeout(() => {
+    expirou = true;
+    controller.abort();
+  }, TEMPO_LIMITE_MS);
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new ErroQrPublico("api", `A API está indisponível no momento (HTTP ${response.status}).`);
+    }
+
+    const dataOriginal = await response.text();
+    let data: RespostaApi<T>;
+    try {
+      data = JSON.parse(dataOriginal) as RespostaApi<T>;
+    } catch (e) {
+      throw new ErroQrPublico("api", "A API retornou dados em um formato inesperado.");
+    }
+
+    if (data.success !== true) {
+      const mensagem = typeof data.message === "string" && data.message.trim() 
+        ? data.message.trim() 
+        : "Ação não autorizada ou falhou no servidor.";
+      throw new ErroQrPublico("api", mensagem);
+    }
+
+    return data;
+  } catch (error) {
+    if (error instanceof ErroQrPublico) throw error;
+    if (expirou) {
+      throw new ErroQrPublico("rede", "A comunicação demorou mais que o esperado.");
+    }
+    if (signal?.aborted) throw error;
+    throw new ErroQrPublico("rede", "Não foi possível conectar à API.");
+  } finally {
+    window.clearTimeout(timeout);
+    signal?.removeEventListener("abort", cancelar);
+  }
+}
+
+export type TecnicoLoginResponse = {
+  nome: string;
+  login: string;
+};
+
+export type EquipamentoContextoResponse = {
+  tag_ativo: string;
+  nome_ativo: string;
+  setor: string;
+  equipamento_bd: string;
+};
+
+export type QrOsContextoResponse = {
+  tecnico: TecnicoLoginResponse;
+  equipamento: EquipamentoContextoResponse;
+  id_os_sugerido: string;
+};
+
+export type QrOsLoginResult = {
+  success: boolean;
+  token: string;
+  expira_em: string;
+  tecnico: TecnicoLoginResponse;
+  equipamento: EquipamentoContextoResponse;
+};
+
+export async function qrOsLogin(login: string, senha: string, codigo: string): Promise<QrOsLoginResult> {
+  const res = await enviarPost<QrOsLoginResult>({
+    action: "qr_os_login",
+    login,
+    senha,
+    codigo
+  });
+  return res as unknown as QrOsLoginResult;
+}
+
+export async function qrOsValidarSessao(token: string): Promise<boolean> {
+  try {
+    await enviarPost({ action: "qr_os_validar_sessao", token });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+export async function qrOsContexto(token: string, codigo: string): Promise<QrOsContextoResponse> {
+  const res = await enviarPost<QrOsContextoResponse>({
+    action: "qr_os_contexto",
+    token,
+    codigo
+  });
+  // a resposta JSON tem "success: true", mas os dados estão misturados no topo, ou talvez em data. 
+  // O formato esperado do Apps script baseado na doc do user: { success: true, tecnico: {...}, equipamento: {...}, id_os_sugerido: "..." }
+  return res as unknown as QrOsContextoResponse; 
+}
+
+export async function qrOsRegistrar(payload: Record<string, unknown>): Promise<{ id_os: string; duplicado: boolean; message: string }> {
+  const res = await enviarPost<{ id_os: string; duplicado: boolean; message: string }>({
+    action: "qr_os_registrar",
+    ...payload
+  });
+  return res as unknown as { id_os: string; duplicado: boolean; message: string };
+}
+
+export async function qrOsLogout(token: string): Promise<void> {
+  try {
+    await enviarPost({ action: "qr_os_logout", token });
+  } catch (error) {
+    // Ignorar erros de logout silenciosamente
+  }
+}

@@ -39,6 +39,7 @@ import {
   type RegistroManutencao,
   type ResumoEquipamento,
 } from "@/services/qrPublicoApi";
+import QrOsFlow from "@/components/qr-os/QrOsFlow";
 import "./EquipamentoPublico.css";
 
 type EstadoPagina =
@@ -450,6 +451,8 @@ export default function EquipamentoPublico() {
       </header>
 
       <main className="qr-shell qr-main">
+        <QrOsFlow codigo={codigo} onSuccess={() => setTentativa((valor) => valor + 1)} />
+        
         <section className="qr-machine-hero">
           <div className="qr-hazard-line" />
           <div className="qr-machine-content">
