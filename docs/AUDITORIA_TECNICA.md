@@ -312,58 +312,105 @@ Todas as chamadas usam o mesmo endpoint, diferenciadas pelo parâmetro `action` 
 
 O backend **NÃO oferece paginação verdadeira** no GET de OS. Todo o conteúdo da planilha é devolvido em uma única resposta.
 
-**Proposta:** Adicionar uma action `listar_os_paginado` no Apps Script que aceite parâmetros `page`, `limit` e opcionalmente `filtros`.
+**Proposta detalhada:** Ver `docs/PLANO_INTEGRACAO_API.md` — Parte B.
 
-> **Esta alteração será detalhada na ETAPA 02 e apresentada para autorização.**
+### 8.2. Opções de Formulário (Requer autorização)
 
----
+O formulário de nova OS depende do carregamento completo do histórico para popular os dropdowns (equipamento, setor, área, responsável, tipo).
 
-## 9. PRIORIDADES DE IMPLEMENTAÇÃO (FRONTEND)
-
-As seguintes melhorias podem ser feitas **sem alterar o backend:**
-
-| # | Ação | Impacto | Risco |
-|---|------|---------|-------|
-| 1 | **Atualização otimista do cache após criar OS** — inserir a nova OS no cache existente em vez de invalidar tudo | ALTO | BAIXO |
-| 2 | **Separar query de opções de formulário** — cache independente para equipamentos/setores/tipos | MÉDIO | BAIXO |
-| 3 | **staleTime ajustado** — aumentar para dados de referência | MÉDIO | NENHUM |
-| 4 | **Integrar autenticação real** (auth_login/auth_me/auth_logout) | ALTO | MÉDIO |
-| 5 | **Implementar controle de perfil** no frontend | ALTO | MÉDIO |
-| 6 | **Criar API intermediária na Vercel** para proteger tokens | ALTO | MÉDIO |
+**Proposta:** Endpoint `opcoes_formulario_os` separado. Ver `docs/PLANO_INTEGRACAO_API.md` — Seção B.9.
 
 ---
 
-## 10. ARQUIVOS ENVOLVIDOS POR ETAPA
+## 9. MAPEAMENTO COMPLETO DO SUPABASE
 
-### ETAPA 02 — Otimização de Performance
-- `src/hooks/use-sheet-os.ts` — Atualização otimista do cache
-- `src/lib/sheets-api.ts` — Ajustes na comunicação
-- `src/pages/ListaOS.tsx` — Melhoria na renderização
-- `src/pages/NovaOS.tsx` — Formulário independente de carregamento completo
+> **Atualização 30/09/2026:** Investigação detalhada do uso do Supabase no projeto.
 
-### ETAPA 03 — Arquitetura e Visual
-- `src/App.tsx` — Nova estrutura de rotas e layouts
-- `src/index.css` — Design system aprimorado
-- `src/components/` — Novos componentes de layout
-- `src/pages/Auth.tsx` — Novo design de login
+### 9.1. Usos Ativos (NÃO podem ser removidos)
 
-### ETAPA 04 — Autenticação
-- `src/integrations/` — Nova integração com Apps Script auth
+| Uso | Arquivos | Detalhes |
+|-----|----------|----------|
+| Banco de dados (preventivas) | `Dashboard.tsx` L43 | `supabase.from("preventivas").select("*")` |
+| Banco de dados (NFs) | `Dashboard.tsx` L59 | `supabase.from("notas_fiscais_*")` |
+| Banco de dados (OS escaneadas) | `DetalhesOS.tsx` L25, `EditarOS.tsx` L23 | `supabase.from("os_escaneadas")` |
+| Storage (imagens de OS) | `supabase-helpers.ts` L7 | `supabase.storage.from('os-images')` |
+| Edge Function sheets-proxy | `sheets-api.ts` L9 | Proxy GET para Apps Script |
+| Edge Function webhook-proxy | `supabase/functions/webhook-proxy/` | Proxy para n8n |
+
+### 9.2. Usos que Serão Substituídos
+
+| Uso | Substituição |
+|-----|-------------|
+| `supabase.auth` (login/sessão) | Autenticação real via API Vercel → Apps Script |
+| `RequireAuth.tsx` (guard Supabase) | Novo guard com autenticação real |
+| `authHeaders()` em sheets-api.ts | API intermediária na Vercel |
+
+### 9.3. Conclusão
+
+O Supabase **será mantido** como dependência para banco de dados e storage. Apenas a autenticação será migrada.
+
+---
+
+## 10. CORREÇÕES PENDENTES NO CACHE OTIMISTA
+
+> **Atualização 30/09/2026:** Revisão detalhada da implementação.
+
+| # | Problema | Status |
+|---|----------|--------|
+| C1 | `result.id_os` / `result.numero_os` pode não existir na resposta do Apps Script — OS otimista pode ficar sem número | Pendente |
+| C2 | Múltiplos `setTimeout` acumulam revalidações redundantes | Pendente |
+| C3 | Cache não diferencia por usuário/unidade | Adiado (requer autenticação) |
+
+**Plano de correção:** Ver `docs/PLANO_INTEGRACAO_API.md` — Parte D.
+
+---
+
+## 11. PRIORIDADES DE IMPLEMENTAÇÃO
+
+| # | Ação | Impacto | Risco | Ref. |
+|---|------|---------|-------|------|
+| 1 | Corrigir debounce e validação de ID no cache otimista | MÉDIO | BAIXO | PLANO D.1, D.2 |
+| 2 | Criar API intermediária na Vercel | ALTO | MÉDIO | PLANO C |
+| 3 | Integrar autenticação real (auth_login/me/logout) | ALTO | MÉDIO | PLANO C.7 |
+| 4 | Implementar controle de perfil (ADM/PCM/GESTAO/TECNICO) | ALTO | MÉDIO | PLANO C.9 |
+| 5 | Paginação real no backend | ALTO | MÉDIO | PLANO B |
+| 6 | Separar query de opções de formulário | MÉDIO | BAIXO | PLANO B.9 |
+| 7 | Modernização visual | ALTO | BAIXO | Após itens 1-6 |
+
+---
+
+## 12. ARQUIVOS ENVOLVIDOS POR ETAPA
+
+### Performance (imediato)
+- `src/hooks/use-sheet-os.ts` — Correções D.1, D.2
+
+### API Intermediária
+- `api/auth/login.ts` (novo) — Endpoint de login
+- `api/auth/me.ts` (novo) — Validação de sessão
+- `api/auth/logout.ts` (novo) — Logout
+- `api/proxy.ts` (novo) — Proxy com whitelist
+- `vercel.json` — Rewrites adicionais
+
+### Autenticação no Frontend
+- `src/pages/Auth.tsx` — Migrar de Supabase para auth real
 - `src/components/RequireAuth.tsx` — Migrar para auth real
-- `api/` (novo) — Serverless functions Vercel
+- `src/contexts/AuthContext.tsx` (novo) — Contexto de autenticação
+- `src/App.tsx` — Rotas protegidas por perfil
 
-### ETAPA 05 — Controle de Acesso
-- `src/App.tsx` — Rotas condicionais por perfil
+### Controle de Acesso
 - `src/components/BottomNav.tsx` — Menu por perfil
+- `src/App.tsx` — Rotas condicionais
 
 ---
 
-## 11. CONCLUSÃO
+## 13. CONCLUSÃO
 
 O sistema tem uma **base sólida** com tecnologias modernas e bem integradas. Os principais problemas são:
 
-1. **Desempenho:** ausência de paginação real e invalidação agressiva do cache após registro de OS.
-2. **Segurança:** autenticação Supabase não integrada ao backend real; rotas desprotegidas.
+1. **Desempenho:** ausência de paginação real no backend; revalidações acumuladas no cache otimista.
+2. **Segurança:** autenticação Supabase não integrada ao backend real; rotas desprotegidas; POST direto ao Apps Script sem autenticação.
 3. **UX:** sem controle de perfil; interface única para todos os usuários.
 
-A correção de desempenho mais impactante e segura (atualização otimista do cache) pode ser feita **imediatamente, sem alterar o backend**.
+O Supabase possui dependências ativas (banco, storage) e **não pode ser removido**. Apenas a autenticação será migrada para o sistema real do Apps Script via API intermediária na Vercel.
+
+A proposta completa de arquitetura está documentada em `docs/PLANO_INTEGRACAO_API.md`.

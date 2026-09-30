@@ -89,15 +89,29 @@ Constante exportada para evitar typos e facilitar a invalidação seletiva em m�
 
 ---
 
-## 3. MEDIÇÕES — DEPOIS DA OTIMIZAÇÃO
+## 3. COMPARAÇÃO DE COMPORTAMENTO — ANTES vs. DEPOIS
 
-| Métrica | Antes | Depois | Melhoria |
-|---------|-------|--------|----------|
-| Tempo pós-registro (histórico) | 5-15s (GET completo) | <100ms (inserção no cache) | ~99% |
-| Registros consecutivos | Bloqueado pelo refetch | Imediato | Desbloqueado |
-| Navegação entre telas (cache fresco) | <100ms | <100ms | Mantido |
-| Revalidação em background | Não existia | 30s após registro | Novo |
-| Rollback em caso de erro | Não existia | Automático | Novo |
+> **Nota:** Medições de tempo real (em milissegundos) ainda não foram realizadas.
+> A comparação abaixo descreve o comportamento funcional verificado por análise de código.
+
+| Métrica | Antes | Depois |
+|---------|-------|--------|
+| O que acontece pós-registro de OS | GET completo de TODAS as OS ao backend | Nova OS inserida no cache local; backend consultado depois (30s) |
+| Registros consecutivos | O segundo registro aguardava o refetch do primeiro completar | Formulário pronto imediatamente |
+| Navegação entre telas (cache fresco) | Cache reutilizado (5 min) | Cache reutilizado (5 min) — sem alteração |
+| Revalidação em background | Não existia | 30s após registro |
+| Rollback em caso de erro | Não existia | Automático (cache restaurado) |
+
+### 3.1. Problemas Identificados na Revisão
+
+| # | Problema | Impacto |
+|---|----------|---------|
+| 1 | `result.id_os` pode não existir na resposta do Apps Script | OS otimista fica sem número até revalidação |
+| 2 | Múltiplos `setTimeout(30s)` acumulam-se em registros consecutivos | Revalidações redundantes (1 por OS registrada) |
+| 3 | Cache não diferencia por usuário/unidade | Compartilhamento indevido se trocar de conta (mitigado pelo gcTime) |
+
+**Correções propostas:** Ver `docs/PLANO_INTEGRACAO_API.md` — Parte D.
+
 
 ---
 
