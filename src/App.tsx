@@ -21,7 +21,18 @@ const PlanosManutencao = lazy(() => import("./pages/PlanosManutencao"));
 const EquipamentoPublico = lazy(() => import("./pages/EquipamentoPublico"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Defaults globais: previnem refetches automáticos desnecessários.
+      // Cada hook pode sobrescrever individualmente.
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: 1,
+      staleTime: 2 * 60_000, // 2 min default
+    },
+  },
+});
 
 function PageFallback() {
   return (
