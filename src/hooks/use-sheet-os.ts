@@ -40,18 +40,18 @@ export function useRefreshSheetOS() {
   return () => qc.invalidateQueries({ queryKey: OS_QUERY_KEY });
 }
 
+// Timer centralizado para debounce da revalidação
+let revalidationTimer: ReturnType<typeof setTimeout> | null = null;
+
 /**
  * Hook otimizado para salvar OS com atualização otimista do cache.
  *
  * Fluxo:
  * 1. Envia POST ao backend (Apps Script)
- * 2. Se sucesso, constrói um SheetOS a partir do payload confirmado
- * 3. Insere a nova OS no INÍCIO do cache existente (sem recarregar TUDO)
- * 4. Agenda uma revalidação silenciosa em 30s para sincronizar com a planilha
+ * 2. Se sucesso, avalia rigorosamente a presença de id_os oficial
+ * 3. Se houver id_os, insere a nova OS no INÍCIO do cache (evitando duplicações)
+ * 4. Agenda/renova uma revalidação silenciosa em 30s (debounce centralizado)
  * 5. Se erro, faz rollback do cache ao estado anterior
- *
- * Benefício: o usuário pode registrar OS consecutivas sem esperar
- * o carregamento completo do histórico entre cada registro.
  */
 export function useSaveSheetOS() {
   const queryClient = useQueryClient();
@@ -70,37 +70,55 @@ export function useSaveSheetOS() {
     onSuccess: (result, _variables, context) => {
       const payload = result.payloadEnviado;
       if (!payload) {
-        // Fallback: se não temos o payload confirmado, invalida tudo
+        // Fallback total se não há confirmação de payload
         queryClient.invalidateQueries({ queryKey: OS_QUERY_KEY });
         return;
       }
 
-      // Constrói a nova OS a partir do payload confirmado pelo backend
-      const novaOS: SheetOS = {
-        id_os: result.id_os || result.numero_os || "",
-        numero_os: result.numero_os || result.id_os || "",
-        equipamento: payload.equipamento,
-        setor: payload.setor,
-        area: payload.area,
-        responsavel: payload.responsavel,
-        tipo: payload.tipo,
-        data_inicio: payload.data_inicio,
-        hora_inicio: payload.hora_inicio,
-        data_fim: payload.data_conclusao,
-        hora_fim: payload.hora_conclusao,
-        horimetro: payload.horimetro,
-        observacoes: payload.observacoes,
-      };
+      // Validação RIGOROSA do id_os oficial (não aceita fallback para numero_os ou timestamps soltos)
+      const idOsOficial = typeof result.id_os === "string" && result.id_os.trim().length > 0 
+        ? result.id_os.trim() 
+        : null;
 
-      // Insere no INÍCIO do cache — a OS mais recente aparece primeiro
-      queryClient.setQueryData<SheetOS[]>(OS_QUERY_KEY, (old) => {
-        const current = old ?? [];
-        return [novaOS, ...current];
-      });
+      if (idOsOficial) {
+        // Constrói a nova OS apenas se possuirmos o ID oficial
+        const novaOS: SheetOS = {
+          id_os: idOsOficial,
+          numero_os: result.numero_os || idOsOficial, // Usa numero_os se existir, ou repete id_os
+          equipamento: payload.equipamento,
+          setor: payload.setor,
+          area: payload.area,
+          responsavel: payload.responsavel,
+          tipo: payload.tipo,
+          data_inicio: payload.data_inicio,
+          hora_inicio: payload.hora_inicio,
+          data_fim: payload.data_conclusao,
+          hora_fim: payload.hora_conclusao,
+          horimetro: payload.horimetro,
+          observacoes: payload.observacoes,
+        };
 
-      // Revalidação silenciosa em background (30s)
-      // Sincroniza com a planilha real sem bloquear o usuário
-      setTimeout(() => {
+        // Insere no INÍCIO do cache apenas se ainda não existir
+        queryClient.setQueryData<SheetOS[]>(OS_QUERY_KEY, (old) => {
+          const current = old ?? [];
+          
+          // Prevenção contra duplicação visual
+          if (current.some((os) => os.id_os === idOsOficial)) {
+            return current;
+          }
+
+          return [novaOS, ...current];
+        });
+      }
+
+      // Debounce centralizado da revalidação silenciosa
+      // Reseta o timer se já existir, garantindo apenas UMA revalidação após N cadastros sequenciais
+      if (revalidationTimer) {
+        clearTimeout(revalidationTimer);
+      }
+
+      revalidationTimer = setTimeout(() => {
+        revalidationTimer = null;
         queryClient.invalidateQueries({ queryKey: OS_QUERY_KEY });
       }, BACKGROUND_REVALIDATION_DELAY);
     },

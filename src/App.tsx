@@ -5,8 +5,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
 import ThemeToggle from "@/components/ThemeToggle";
+import RequireAuth from "@/components/RequireAuth";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
+const Login = lazy(() => import("./pages/Login"));
 const Lubrificacao = lazy(() => import("./pages/Lubrificacao"));
 const NovaOS = lazy(() => import("./pages/NovaOS"));
 const ListaOS = lazy(() => import("./pages/ListaOS"));
@@ -91,28 +94,164 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+/**
+ * Wrapper que exige autenticação e perfil específico.
+ * ADM tem acesso a tudo.
+ */
+const Protected = ({
+  children,
+  allow,
+}: {
+  children: ReactNode;
+  allow?: ("ADM" | "PCM" | "GESTAO" | "TECNICO")[];
+}) => (
+  <Layout>
+    <RequireAuth allow={allow}>{children}</RequireAuth>
+  </Layout>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <BrowserRouter>
-        <Routes>
-          <Route path="/equipamento/:codigo" element={<Suspense fallback={<PageFallback />}><EquipamentoPublico /></Suspense>} />
-          <Route path="/" element={<Layout><Lubrificacao /></Layout>} />
-          <Route path="/lubrificacao" element={<Layout><Lubrificacao /></Layout>} />
-          <Route path="/os/nova" element={<Layout><NovaOS /></Layout>} />
-          <Route path="/os" element={<Layout><ListaOS /></Layout>} />
-          <Route path="/os/:id" element={<Layout><DetalhesOS /></Layout>} />
-          <Route path="/os/:id/editar" element={<Layout><EditarOS /></Layout>} />
-          <Route path="/preventivas" element={<Layout><Estoque /></Layout>} />
-          <Route path="/nf" element={<Layout><NotasFiscais /></Layout>} />
-          <Route path="/lancamentos" element={<Layout><ServicosExternos /></Layout>} />
-          <Route path="/servicos-externos" element={<Layout><ServicosExternos /></Layout>} />
-          <Route path="/obras" element={<Layout><Obras /></Layout>} />
-          <Route path="/planos-manutencao" element={<Layout><PlanosManutencao /></Layout>} />
-          <Route path="/relatorios" element={<Layout><Relatorios /></Layout>} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Rotas públicas */}
+            <Route
+              path="/equipamento/:codigo"
+              element={
+                <Suspense fallback={<PageFallback />}>
+                  <EquipamentoPublico />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                <Suspense fallback={<PageFallback />}>
+                  <Login />
+                </Suspense>
+              }
+            />
+            {/* Rota legada — redireciona para /login */}
+            <Route
+              path="/auth"
+              element={
+                <Suspense fallback={<PageFallback />}>
+                  <Login />
+                </Suspense>
+              }
+            />
+
+            {/* Rotas protegidas por perfil */}
+            <Route
+              path="/"
+              element={
+                <Protected allow={["ADM", "PCM", "GESTAO"]}>
+                  <Lubrificacao />
+                </Protected>
+              }
+            />
+            <Route
+              path="/lubrificacao"
+              element={
+                <Protected allow={["ADM", "PCM", "GESTAO"]}>
+                  <Lubrificacao />
+                </Protected>
+              }
+            />
+            <Route
+              path="/os/nova"
+              element={
+                <Protected allow={["ADM", "PCM", "TECNICO"]}>
+                  <NovaOS />
+                </Protected>
+              }
+            />
+            <Route
+              path="/os"
+              element={
+                <Protected allow={["ADM", "PCM", "TECNICO"]}>
+                  <ListaOS />
+                </Protected>
+              }
+            />
+            <Route
+              path="/os/:id"
+              element={
+                <Protected allow={["ADM", "PCM", "TECNICO"]}>
+                  <DetalhesOS />
+                </Protected>
+              }
+            />
+            <Route
+              path="/os/:id/editar"
+              element={
+                <Protected allow={["ADM", "PCM"]}>
+                  <EditarOS />
+                </Protected>
+              }
+            />
+            <Route
+              path="/preventivas"
+              element={
+                <Protected allow={["ADM", "PCM"]}>
+                  <Estoque />
+                </Protected>
+              }
+            />
+            <Route
+              path="/nf"
+              element={
+                <Protected allow={["ADM", "PCM"]}>
+                  <NotasFiscais />
+                </Protected>
+              }
+            />
+            <Route
+              path="/lancamentos"
+              element={
+                <Protected allow={["ADM", "PCM"]}>
+                  <ServicosExternos />
+                </Protected>
+              }
+            />
+            <Route
+              path="/servicos-externos"
+              element={
+                <Protected allow={["ADM", "PCM"]}>
+                  <ServicosExternos />
+                </Protected>
+              }
+            />
+            <Route
+              path="/obras"
+              element={
+                <Protected allow={["ADM", "PCM"]}>
+                  <Obras />
+                </Protected>
+              }
+            />
+            <Route
+              path="/planos-manutencao"
+              element={
+                <Protected allow={["ADM", "PCM"]}>
+                  <PlanosManutencao />
+                </Protected>
+              }
+            />
+            <Route
+              path="/relatorios"
+              element={
+                <Protected allow={["ADM", "GESTAO"]}>
+                  <Relatorios />
+                </Protected>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

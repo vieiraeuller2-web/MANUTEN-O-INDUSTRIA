@@ -1,0 +1,309 @@
+/**
+ * Utilitários compartilhados para as serverless functions da API Vercel.
+ * 
+ * Responsabilidades:
+ * - Comunicação com o Google Apps Script
+ * - Criptografia/descriptografia de sessão (AES-GCM via Web Crypto)
+ * - Gerenciamento de cookies de sessão
+ * - Validação de CSRF (Origin/Referer)
+ */
+
+// ── Tipos ──────────────────────────────────────────────────────
+
+export interface SessionPayload {
+  token: string;
+  perfil: "ADM" | "PCM" | "GESTAO" | "TECNICO";
+  nome: string;
+  login: string;
+  unidade: string;
+  criado_em: number;
+}
+
+export interface GASResponse {
+  success: boolean;
+  message?: string;
+  code?: number;
+  [key: string]: unknown;
+}
+
+// ── Constantes ─────────────────────────────────────────────────
+
+const SESSION_COOKIE_NAME = "cmi_session";
+const SESSION_MAX_AGE = 8 * 60 * 60; // 8 horas
+const GAS_TIMEOUT_MS = 30_000;
+
+// ── Whitelist de actions ───────────────────────────────────────
+
+export const ALLOWED_ACTIONS = new Set([
+  // OS
+  "registrar_os",
+  "listar_os_paginado",
+  "opcoes_formulario_os",
+  // Preventivas
+  "preventivas_resumo",
+  "preventivas_setores",
+  "preventivas_ativos",
+  "preventivas_planos",
+  "preventivas_arvore",
+  "preventivas_plano_completo",
+  "preventiva_gerar_pdf_execucao",
+  "preventiva_gerar_pdf_ativo",
+  "preventiva_gerar_pdf_setor",
+  "preventiva_gerar_pdf_geral",
+  "preventiva_gerar_pdf_diretoria",
+  "concluir_preventiva",
+  // Obras
+  "obras_listar",
+  "obras_criar",
+  "obras_editar",
+  // Lubrificação
+  "lubrificacao_listar",
+  "lubrificacao_registrar",
+  // Serviços externos
+  "servicos_externos_listar",
+  "servicos_externos_criar",
+]);
+
+// Actions de leitura que podem ser reenviadas com segurança
+const READ_ACTIONS = new Set([
+  "listar_os_paginado",
+  "opcoes_formulario_os",
+  "preventivas_resumo",
+  "preventivas_setores",
+  "preventivas_ativos",
+  "preventivas_planos",
+  "preventivas_arvore",
+  "preventivas_plano_completo",
+  "obras_listar",
+  "lubrificacao_listar",
+  "servicos_externos_listar",
+]);
+
+// ── GAS Communication ──────────────────────────────────────────
+
+function getGASUrl(): string {
+  const url = process.env.GAS_WEBAPP_URL;
+  if (!url) throw new Error("GAS_WEBAPP_URL não configurada");
+  return url;
+}
+
+/**
+ * Chama o Google Apps Script.
+ * Trata redirects (302/307) que o Web App do GAS produz.
+ * Para actions de leitura, segue redirects automaticamente.
+ * Para actions de escrita, NÃO reenvia automaticamente.
+ */
+export async function callGAS(
+  body: Record<string, unknown>,
+  options?: { method?: "GET" | "POST" }
+): Promise<GASResponse> {
+  const method = options?.method ?? "POST";
+  const gasUrl = getGASUrl();
+  const action = String(body.action || "");
+  const isRead = READ_ACTIONS.has(action);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GAS_TIMEOUT_MS);
+
+  try {
+    let response: Response;
+
+    if (method === "GET") {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(body)) {
+        if (v !== null && v !== undefined) params.set(k, String(v));
+      }
+      response = await fetch(`${gasUrl}?${params}`, {
+        method: "GET",
+        redirect: "follow",
+        signal: controller.signal,
+      });
+    } else {
+      // POST — redirect manual para evitar reenvio de escritas
+      response = await fetch(gasUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(body),
+        redirect: isRead ? "follow" : "manual",
+        signal: controller.signal,
+      });
+
+      // Se GAS retornou redirect e é escrita, segue com GET (o redirect do GAS)
+      if (!isRead && (response.status === 302 || response.status === 307)) {
+        const redirectUrl = response.headers.get("Location");
+        if (redirectUrl) {
+          response = await fetch(redirectUrl, {
+            method: "GET",
+            redirect: "follow",
+            signal: controller.signal,
+          });
+        }
+      }
+    }
+
+    const text = await response.text();
+    try {
+      return JSON.parse(text) as GASResponse;
+    } catch {
+      console.error("[GAS] Resposta não-JSON:", text.slice(0, 500));
+      return { success: false, message: "Resposta inválida do servidor" };
+    }
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === "AbortError") {
+      return { success: false, message: "Timeout ao conectar com o backend" };
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ── Criptografia de Sessão (AES-GCM via Web Crypto) ────────────
+
+function getSessionSecret(): Uint8Array {
+  const secret = process.env.SESSION_COOKIE_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("SESSION_COOKIE_SECRET ausente ou curta demais (min 32 chars)");
+  }
+  // Deriva uma chave de 256 bits a partir do segredo
+  const encoder = new TextEncoder();
+  const raw = encoder.encode(secret);
+  return raw.slice(0, 32);
+}
+
+async function getKey(): Promise<CryptoKey> {
+  const rawKey = getSessionSecret();
+  return crypto.subtle.importKey("raw", rawKey, "AES-GCM", false, [
+    "encrypt",
+    "decrypt",
+  ]);
+}
+
+export async function encryptSession(payload: SessionPayload): Promise<string> {
+  const key = await getKey();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(JSON.stringify(payload));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    data
+  );
+
+  // Formato: base64(iv + ciphertext)
+  const combined = new Uint8Array(iv.length + new Uint8Array(encrypted).length);
+  combined.set(iv);
+  combined.set(new Uint8Array(encrypted), iv.length);
+
+  return Buffer.from(combined).toString("base64url");
+}
+
+export async function decryptSession(
+  cookieValue: string
+): Promise<SessionPayload | null> {
+  try {
+    const key = await getKey();
+    const combined = Buffer.from(cookieValue, "base64url");
+    const iv = combined.slice(0, 12);
+    const ciphertext = combined.slice(12);
+
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      ciphertext
+    );
+
+    const decoder = new TextDecoder();
+    const payload = JSON.parse(decoder.decode(decrypted)) as SessionPayload;
+
+    // Verifica expiração
+    const age = (Date.now() - payload.criado_em) / 1000;
+    if (age > SESSION_MAX_AGE) return null;
+
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+// ── Cookies ────────────────────────────────────────────────────
+
+export function setSessionCookie(value: string): string {
+  const isProduction = process.env.NODE_ENV === "production";
+  const parts = [
+    `${SESSION_COOKIE_NAME}=${value}`,
+    "HttpOnly",
+    `Max-Age=${SESSION_MAX_AGE}`,
+    "Path=/",
+    `SameSite=Lax`,
+  ];
+  if (isProduction) parts.push("Secure");
+  return parts.join("; ");
+}
+
+export function clearSessionCookie(): string {
+  return `${SESSION_COOKIE_NAME}=; HttpOnly; Max-Age=0; Path=/; SameSite=Lax`;
+}
+
+export function parseCookies(header: string | null): Record<string, string> {
+  if (!header) return {};
+  const cookies: Record<string, string> = {};
+  header.split(";").forEach((part) => {
+    const [key, ...rest] = part.trim().split("=");
+    if (key) cookies[key.trim()] = rest.join("=").trim();
+  });
+  return cookies;
+}
+
+export function getSessionFromCookies(
+  cookieHeader: string | null
+): string | null {
+  const cookies = parseCookies(cookieHeader);
+  return cookies[SESSION_COOKIE_NAME] || null;
+}
+
+// ── CSRF ───────────────────────────────────────────────────────
+
+const ALLOWED_ORIGINS = new Set([
+  // Adicionar domínios reais quando configurados
+]);
+
+export function validateOrigin(
+  req: Request,
+  method: string
+): { valid: boolean; reason?: string } {
+  // GET não requer validação (não é mutável)
+  if (method === "GET") return { valid: true };
+
+  const origin = req.headers.get("origin");
+  const referer = req.headers.get("referer");
+
+  // Em produção, validar origin ou referer
+  if (process.env.VERCEL_URL) {
+    const vercelUrl = `https://${process.env.VERCEL_URL}`;
+    ALLOWED_ORIGINS.add(vercelUrl);
+  }
+  if (process.env.ALLOWED_ORIGIN) {
+    ALLOWED_ORIGINS.add(process.env.ALLOWED_ORIGIN);
+  }
+
+  // localhost para dev
+  if (process.env.NODE_ENV !== "production") {
+    return { valid: true };
+  }
+
+  if (origin) {
+    if (ALLOWED_ORIGINS.has(origin)) return { valid: true };
+    return { valid: false, reason: `Origin não permitido: ${origin}` };
+  }
+
+  if (referer) {
+    try {
+      const refOrigin = new URL(referer).origin;
+      if (ALLOWED_ORIGINS.has(refOrigin)) return { valid: true };
+    } catch { /* ignore */ }
+  }
+
+  return { valid: false, reason: "Origin/Referer ausente" };
+}
