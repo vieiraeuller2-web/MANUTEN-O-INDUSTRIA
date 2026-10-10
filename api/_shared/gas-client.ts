@@ -10,6 +10,15 @@
 
 // ── Tipos ──────────────────────────────────────────────────────
 
+export interface Permissao {
+  modulo: string;
+  visualizar?: boolean;
+  criar?: boolean;
+  editar?: boolean;
+  excluir?: boolean;
+  executar?: boolean;
+}
+
 export interface SessionPayload {
   token: string;
   perfil: "ADM" | "PCM" | "GESTAO" | "TECNICO";
@@ -17,6 +26,7 @@ export interface SessionPayload {
   login: string;
   unidade: string;
   criado_em: number;
+  permissoes?: Permissao[];
 }
 
 export interface GASResponse {
@@ -269,15 +279,39 @@ const ALLOWED_ORIGINS = new Set([
   // Adicionar domínios reais quando configurados
 ]);
 
+type NodeHeaderValue = string | string[] | undefined;
+type NodeLikeHeaders = Record<string, NodeHeaderValue>;
+
+/**
+ * Lê um header tanto de Web `Headers` (headers.get) quanto de
+ * headers Node/VercelRequest (objeto simples, chaves em minúsculas).
+ * Retorna null se ausente — nunca inventa valor.
+ */
+function readHeader(
+  headers: Headers | NodeLikeHeaders | undefined | null,
+  name: string
+): string | null {
+  if (!headers) return null;
+  if (typeof (headers as Headers).get === "function") {
+    return (headers as Headers).get(name);
+  }
+  const raw = (headers as NodeLikeHeaders)[name.toLowerCase()];
+  if (Array.isArray(raw)) {
+    const first = raw.find((v) => typeof v === "string" && v.length > 0);
+    return first ?? null;
+  }
+  return typeof raw === "string" && raw.length > 0 ? raw : null;
+}
+
 export function validateOrigin(
-  req: Request,
+  req: Request | { headers: NodeLikeHeaders },
   method: string
 ): { valid: boolean; reason?: string } {
   // GET não requer validação (não é mutável)
   if (method === "GET") return { valid: true };
 
-  const origin = req.headers.get("origin");
-  const referer = req.headers.get("referer");
+  const origin = readHeader(req.headers, "origin");
+  const referer = readHeader(req.headers, "referer");
 
   // Em produção, validar origin ou referer
   if (process.env.VERCEL_URL) {

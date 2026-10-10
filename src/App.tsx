@@ -98,15 +98,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
  * Wrapper que exige autenticação e perfil específico.
  * ADM tem acesso a tudo.
  */
-const Protected = ({
-  children,
-  allow,
-}: {
-  children: ReactNode;
-  allow?: ("ADM" | "PCM" | "GESTAO" | "TECNICO")[];
-}) => (
+const Protected = ({ children }: { children: ReactNode }) => (
   <Layout>
-    <RequireAuth allow={allow}>{children}</RequireAuth>
+    <RequireAuth>{children}</RequireAuth>
   </Layout>
 );
 
@@ -148,7 +142,7 @@ const App = () => (
             <Route
               path="/"
               element={
-                <Protected allow={["ADM", "PCM", "GESTAO"]}>
+                <Protected>
                   <Lubrificacao />
                 </Protected>
               }
@@ -156,7 +150,7 @@ const App = () => (
             <Route
               path="/lubrificacao"
               element={
-                <Protected allow={["ADM", "PCM", "GESTAO"]}>
+                <Protected>
                   <Lubrificacao />
                 </Protected>
               }
@@ -164,7 +158,7 @@ const App = () => (
             <Route
               path="/os/nova"
               element={
-                <Protected allow={["ADM", "PCM", "TECNICO"]}>
+                <Protected>
                   <NovaOS />
                 </Protected>
               }
@@ -172,7 +166,7 @@ const App = () => (
             <Route
               path="/os"
               element={
-                <Protected allow={["ADM", "PCM", "TECNICO"]}>
+                <Protected>
                   <ListaOS />
                 </Protected>
               }
@@ -180,7 +174,7 @@ const App = () => (
             <Route
               path="/os/:id"
               element={
-                <Protected allow={["ADM", "PCM", "TECNICO"]}>
+                <Protected>
                   <DetalhesOS />
                 </Protected>
               }
@@ -188,7 +182,7 @@ const App = () => (
             <Route
               path="/os/:id/editar"
               element={
-                <Protected allow={["ADM", "PCM"]}>
+                <Protected>
                   <EditarOS />
                 </Protected>
               }
@@ -196,7 +190,7 @@ const App = () => (
             <Route
               path="/preventivas"
               element={
-                <Protected allow={["ADM", "PCM"]}>
+                <Protected>
                   <Estoque />
                 </Protected>
               }
@@ -204,7 +198,7 @@ const App = () => (
             <Route
               path="/nf"
               element={
-                <Protected allow={["ADM", "PCM"]}>
+                <Protected>
                   <NotasFiscais />
                 </Protected>
               }
@@ -212,7 +206,7 @@ const App = () => (
             <Route
               path="/lancamentos"
               element={
-                <Protected allow={["ADM", "PCM"]}>
+                <Protected>
                   <ServicosExternos />
                 </Protected>
               }
@@ -220,7 +214,7 @@ const App = () => (
             <Route
               path="/servicos-externos"
               element={
-                <Protected allow={["ADM", "PCM"]}>
+                <Protected>
                   <ServicosExternos />
                 </Protected>
               }
@@ -228,7 +222,7 @@ const App = () => (
             <Route
               path="/obras"
               element={
-                <Protected allow={["ADM", "PCM"]}>
+                <Protected>
                   <Obras />
                 </Protected>
               }
@@ -236,7 +230,7 @@ const App = () => (
             <Route
               path="/planos-manutencao"
               element={
-                <Protected allow={["ADM", "PCM"]}>
+                <Protected>
                   <PlanosManutencao />
                 </Protected>
               }
@@ -244,7 +238,7 @@ const App = () => (
             <Route
               path="/relatorios"
               element={
-                <Protected allow={["ADM", "GESTAO"]}>
+                <Protected>
                   <Relatorios />
                 </Protected>
               }

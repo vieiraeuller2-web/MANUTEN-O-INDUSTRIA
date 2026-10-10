@@ -11,7 +11,7 @@ import {
   ListChecks,
   LogOut,
 } from "lucide-react";
-import { useAuth, canAccessRoute, type Perfil } from "@/contexts/AuthContext";
+import { useAuth, canAccessRoute } from "@/contexts/AuthContext";
 
 interface NavItem {
   path: string;
@@ -40,11 +40,11 @@ export default function BottomNav() {
   // Não mostra nav se não autenticado
   if (status !== "authenticated" || !user) return null;
 
-  const perfil = user.perfil;
+
 
   // Filtra itens visíveis pelo perfil
   const visibleItems = allNavItems.filter((item) =>
-    canAccessRoute(perfil, item.path)
+    canAccessRoute(user, item.path)
   );
 
   const handleLogout = async () => {

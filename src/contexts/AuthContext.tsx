@@ -24,7 +24,7 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (user: string, senha: string) => Promise<void>;
+  login: (user: string, senha: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
   /** Verifica se o usuário possui pelo menos um dos perfis */
   hasPerfil: (...perfis: Perfil[]) => boolean;
@@ -42,31 +42,13 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-// ── Permissões por perfil ──────────────────────────────────────
+// ── Autorização ────────────────────────────────────────────────
+// A autorização é baseada EXCLUSIVAMENTE nas `permissoes` do AUTH62.
+// Implementação central em src/lib/authz.ts (re-exportada aqui por compatibilidade).
+// A antiga matriz PERFIL_ROUTES foi removida: não existe fallback por perfil.
 
-export const PERFIL_ROUTES: Record<Perfil, string[]> = {
-  ADM: ["*"], // acesso completo
-  PCM: [
-    "/lubrificacao",
-    "/os/nova",
-    "/os",
-    "/servicos-externos",
-    "/lancamentos",
-    "/obras",
-    "/planos-manutencao",
-    "/equipe",
-  ],
-  GESTAO: ["/relatorios", "/lubrificacao"],
-  TECNICO: ["/os/nova", "/os"],
-};
-
-export function canAccessRoute(perfil: Perfil | undefined, path: string): boolean {
-  if (!perfil) return false;
-  const routes = PERFIL_ROUTES[perfil];
-  if (!routes) return false;
-  if (routes.includes("*")) return true;
-  return routes.some((r) => path === r || path.startsWith(r + "/"));
-}
+export { canAccessRoute } from "@/lib/authz";
+export type { Perfil } from "@/lib/api-client";
 
 // ── Provider ───────────────────────────────────────────────────
 
@@ -108,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (user: string, senha: string) => {
       const authUser = await apiLogin(user, senha);
       setState({ user: authUser, status: "authenticated" });
+      return authUser;
     },
     []
   );

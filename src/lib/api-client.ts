@@ -9,12 +9,22 @@ const API_BASE = "/api";
 
 export type Perfil = "ADM" | "PCM" | "GESTAO" | "TECNICO";
 
+export interface Permissao {
+  modulo: string;
+  visualizar?: boolean;
+  criar?: boolean;
+  editar?: boolean;
+  excluir?: boolean;
+  executar?: boolean;
+}
+
 export interface AuthUser {
   authenticated: boolean;
   perfil: Perfil;
   nome: string;
   login: string;
   unidade: string;
+  permissoes?: Permissao[];
 }
 
 export interface ApiResponse<T = unknown> {
@@ -48,6 +58,7 @@ export async function apiLogin(
     nome: data.nome,
     login: data.login,
     unidade: data.unidade,
+    permissoes: data.permissoes || [],
   };
 }
 
@@ -69,6 +80,7 @@ export async function apiGetMe(): Promise<AuthUser | null> {
       nome: data.nome,
       login: data.login,
       unidade: data.unidade,
+      permissoes: data.permissoes || [],
     };
   } catch {
     return null;
@@ -114,10 +126,30 @@ export async function apiProxy<T = Record<string, unknown>>(
 
 // ── Tipos paginados ────────────────────────────────────────────
 
+export interface PaginatedOSItem {
+  row_ref?: number;
+  id_os: string | null;
+  numero_os?: string;
+  equipamento?: string;
+  setor?: string;
+  area?: string;
+  responsavel?: string;
+  tipo?: string;
+  data_inicio?: string;
+  hora_inicio?: string;
+  data_fim?: string;
+  data_conclusao?: string;
+  hora_fim?: string;
+  hora_conclusao?: string;
+  horimetro?: string | number;
+  observacoes?: string;
+  [key: string]: unknown;
+}
+
 export interface PaginatedOS {
   success: boolean;
   action: string;
-  items: Record<string, unknown>[];
+  items: PaginatedOSItem[];
   page_size: number;
   has_more: boolean;
   next_cursor: string | null;

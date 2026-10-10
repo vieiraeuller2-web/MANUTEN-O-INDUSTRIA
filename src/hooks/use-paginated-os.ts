@@ -12,7 +12,6 @@ export interface OSFilters {
   filtro_setor?: string;
   filtro_area?: string;
   filtro_tipo?: string;
-  filtro_unidade?: string;
   data_de?: string;
   data_ate?: string;
   busca?: string;
@@ -131,7 +130,7 @@ export function useSavePaginatedOS(
 
       if (idOsOficial) {
         // Verifica se a OS corresponde aos filtros ativos
-        const matchesFilters = checkFilters(payload, filters);
+        const matchesFilters = checkFilters(payload, filters, idOsOficial);
 
         if (matchesFilters) {
           // Insere na primeira página do cache
@@ -154,8 +153,8 @@ export function useSavePaginatedOS(
               tipo: payload.tipo,
               data_inicio: payload.data_inicio,
               hora_inicio: payload.hora_inicio,
-              data_fim: payload.data_conclusao,
-              hora_fim: payload.hora_conclusao,
+              data_conclusao: payload.data_conclusao,
+              hora_conclusao: payload.hora_conclusao,
               horimetro: payload.horimetro,
               observacoes: payload.observacoes,
             };
@@ -196,12 +195,27 @@ export function useSavePaginatedOS(
 }
 
 /**
+ * Normaliza uma data em string para yyyy-MM-dd sem usar Date.
+ * Aceita yyyy-MM-dd (com ou sem sufixo de hora) e dd/MM/yyyy.
+ * Retorna "" se não reconhecer o formato.
+ */
+function toIsoDateString(value: unknown): string {
+  const text = String(value ?? "").trim();
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const br = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  return "";
+}
+
+/**
  * Verifica se um payload corresponde aos filtros ativos.
  * Se não corresponder, não deve ser inserido no cache filtrado.
  */
 function checkFilters(
   payload: Record<string, unknown>,
-  filters: OSFilters
+  filters: OSFilters,
+  idOs?: string | null
 ): boolean {
   if (
     filters.filtro_equipamento &&
@@ -233,5 +247,27 @@ function checkFilters(
       filters.filtro_responsavel.toUpperCase()
   )
     return false;
+
+  // Período: comparação lexicográfica de strings yyyy-MM-dd (sem Date)
+  if (filters.data_de || filters.data_ate) {
+    const dataInicio = toIsoDateString(payload.data_inicio);
+    if (!dataInicio) return false;
+    if (filters.data_de && dataInicio < filters.data_de) return false;
+    if (filters.data_ate && dataInicio > filters.data_ate) return false;
+  }
+
+  // Busca textual: id_os, equipamento, observações (case-insensitive)
+  const busca = (filters.busca || "").trim().toUpperCase();
+  if (busca) {
+    const searchable = [
+      String(idOs || payload.id_os || ""),
+      String(payload.equipamento || ""),
+      String(payload.observacoes || ""),
+    ]
+      .join(" ")
+      .toUpperCase();
+    if (!searchable.includes(busca)) return false;
+  }
+
   return true;
 }

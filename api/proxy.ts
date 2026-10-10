@@ -6,7 +6,7 @@ import {
   clearSessionCookie,
   validateOrigin,
   ALLOWED_ACTIONS,
-} from "../_shared/gas-client.js";
+} from "./_shared/gas-client.js";
 
 /**
  * POST /api/proxy

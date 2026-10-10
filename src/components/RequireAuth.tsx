@@ -1,23 +1,25 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { useAuth, canAccessRoute, type Perfil } from "@/contexts/AuthContext";
+import { useAuth, canAccessRoute } from "@/contexts/AuthContext";
 
 /**
- * Guard de autenticação e autorização por perfil.
- * 
- * Substitui o RequireAuth antigo baseado em Supabase.
- * 
- * Uso em rotas:
- *   <RequireAuth>            → apenas autenticação
- *   <RequireAuth allow={["ADM","PCM"]}>  → autenticação + perfil
+ * Guard de autenticação e autorização.
+ *
+ * Decisão:
+ *  1. usuário autenticado?
+ *  2. módulo AUTH62 da rota atual (src/lib/authz.ts → ROUTE_PERMISSION_MAP)
+ *  3. regra com a MESMA precedência do auth62Autorizar_ (wildcard → específica)
+ *  4. ação exigida (visualizar por padrão) === true
+ *  5. libera ou nega
+ *
+ * Não há autorização por perfil nem arrays `allow` fixos.
+ * A fonte oficial é o AUTH62 (permissoes de auth_me).
  */
 interface RequireAuthProps {
   children: React.ReactNode;
-  /** Perfis permitidos. Se omitido, qualquer usuário autenticado é aceito. */
-  allow?: Perfil[];
 }
 
-export default function RequireAuth({ children, allow }: RequireAuthProps) {
+export default function RequireAuth({ children }: RequireAuthProps) {
   const { user, status } = useAuth();
   const location = useLocation();
 
@@ -34,24 +36,7 @@ export default function RequireAuth({ children, allow }: RequireAuthProps) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // Verifica perfil se especificado
-  if (allow && allow.length > 0 && !allow.includes(user.perfil)) {
-    return (
-      <div className="page-container">
-        <div className="stat-card border border-destructive/40 bg-destructive/5 text-center py-8">
-          <p className="text-sm font-medium text-destructive mb-2">
-            Acesso restrito
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Seu perfil ({user.perfil}) não possui permissão para acessar esta página.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Verifica se a rota é acessível pelo perfil
-  if (!canAccessRoute(user.perfil, location.pathname)) {
+  if (!canAccessRoute(user, location.pathname)) {
     return (
       <div className="page-container">
         <div className="stat-card border border-destructive/40 bg-destructive/5 text-center py-8">

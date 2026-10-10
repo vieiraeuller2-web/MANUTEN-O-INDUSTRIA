@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/hooks/use-toast";
 import { AlertCircle, Check, CheckCircle2, ChevronsUpDown, History, Loader2, RotateCcw, Save } from "lucide-react";
-import type { SheetOS } from "@/lib/sheets-api";
-import { useSaveSheetOS, useSheetOS } from "@/hooks/use-sheet-os";
-import { normalizeText, safeArray, safeString, uniqueSorted } from "@/lib/data-helpers";
+import { useFormOptionsOS } from "@/hooks/use-form-options-os";
+import { useSavePaginatedOS } from "@/hooks/use-paginated-os";
+import { useAuth } from "@/contexts/AuthContext";
+import { normalizeText, safeString } from "@/lib/data-helpers";
 import { cn } from "@/lib/utils";
 
 interface FormData {
@@ -30,8 +31,6 @@ interface FormData {
 type FormField = keyof FormData;
 type FormErrors = Partial<Record<FormField, string>>;
 
-const TIPO_OPTIONS = ["CORRETIVA", "COR. PRO.", "PREVENTIVA", "COR. EQUIP. RESERV."];
-const RESPONSAVEL_OPTIONS = ["GABRIEL", "IVAN", "LUIS PEDRO", "WERBETH"];
 const REQUIRED_FIELDS: FormField[] = [
   "equipamento",
   "setor",
@@ -191,6 +190,7 @@ interface SearchableLockedSelectFieldProps {
   onChange: (field: FormField, value: string) => void;
   required?: boolean;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 const SearchableLockedSelectField = memo(function SearchableLockedSelectField({
@@ -202,6 +202,7 @@ const SearchableLockedSelectField = memo(function SearchableLockedSelectField({
   onChange,
   required,
   placeholder = "Selecione",
+  disabled,
 }: SearchableLockedSelectFieldProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -240,7 +241,7 @@ const SearchableLockedSelectField = memo(function SearchableLockedSelectField({
             role="combobox"
             aria-expanded={open}
             aria-invalid={!!error}
-            disabled={!hasOptions}
+            disabled={disabled || !hasOptions}
             className={cn(
               "h-10 w-full justify-between bg-background px-3 text-left font-normal",
               error ? "border-destructive ring-1 ring-destructive/30" : "border-l-2 border-l-primary/40",
@@ -337,25 +338,31 @@ function FieldError({ message }: { message: string }) {
 }
 
 export default function NovaOS() {
-  const { data: historico } = useSheetOS();
-  const mutation = useSaveSheetOS();
+  const { user } = useAuth();
+  const userId = user?.login || "guest";
+  const unidade = user?.unidade || "";
+
+  const { data: optionsData, isLoading: isLoadingOptions } = useFormOptionsOS();
+  const mutation = useSavePaginatedOS(userId, unidade, {});
+
   const [form, setForm] = useState<FormData>(() => initialForm());
   const [errors, setErrors] = useState<FormErrors>({});
   const [saved, setSaved] = useState(false);
   const [savedHorimetro, setSavedHorimetro] = useState("");
   const submittingRef = useRef(false);
 
-  const listaSegura = safeArray<SheetOS>(historico);
-  const options = useMemo(
-    () => ({
-      equipamentos: uniqueSorted(listaSegura.map((os) => os.equipamento)),
-      setores: uniqueSorted(listaSegura.map((os) => os.setor)),
-      areas: uniqueSorted(listaSegura.map((os) => os.area)),
-      responsaveis: uniqueSorted([...RESPONSAVEL_OPTIONS, ...listaSegura.map((os) => os.responsavel)]),
-      tipos: uniqueSorted([...TIPO_OPTIONS, ...listaSegura.map((os) => os.tipo)]),
-    }),
-    [listaSegura],
-  );
+  const options = useMemo<SelectOptions>(() => {
+    if (!optionsData) {
+      return { equipamentos: [], setores: [], areas: [], responsaveis: [], tipos: [] };
+    }
+    return {
+      equipamentos: optionsData.equipamentos || [],
+      setores: optionsData.setores || [],
+      areas: optionsData.areas || [],
+      responsaveis: optionsData.responsaveis || [],
+      tipos: optionsData.tipos || [],
+    };
+  }, [optionsData]);
 
   const setField = useCallback((field: FormField, value: string) => {
     setSaved(false);
@@ -381,8 +388,6 @@ export default function NovaOS() {
       setSaved(false);
       setSavedHorimetro("");
 
-      // Lê o valor realmente visível no campo no instante do toque.
-      // Isso evita enviar um estado React atrasado em navegadores móveis.
       const nativeForm = new FormData(event.currentTarget);
       const submittedForm: FormData = {
         ...form,
@@ -400,13 +405,15 @@ export default function NovaOS() {
         });
         return;
       }
+      
       if (mutation.isPending || submittingRef.current) return;
       submittingRef.current = true;
+      
       mutation.mutate(
-        submittedForm,
+        submittedForm as any,
         {
           onSuccess: (result) => {
-            const confirmedHorimeter = result.payloadEnviado.horimetro;
+            const confirmedHorimeter = result.payloadEnviado?.horimetro || submittedForm.horimetro;
             toast({
               title: "Registro de OS salvo com sucesso.",
               description: `Horímetro ${confirmedHorimeter} confirmado no envio.`,
@@ -453,7 +460,12 @@ export default function NovaOS() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="stat-card space-y-4">
+        <div className="stat-card space-y-4 relative">
+          {isLoadingOptions && (
+            <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center rounded-lg">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <SearchableLockedSelectField
               label="Equipamento / TAG"
@@ -463,6 +475,7 @@ export default function NovaOS() {
               error={errors.equipamento}
               onChange={setField}
               required
+              disabled={isLoadingOptions}
             />
             <TextField
               label="Horímetro"
@@ -487,6 +500,7 @@ export default function NovaOS() {
               error={errors.setor}
               onChange={setField}
               required
+              disabled={isLoadingOptions}
             />
             <SearchableLockedSelectField
               label="Área"
@@ -496,6 +510,7 @@ export default function NovaOS() {
               error={errors.area}
               onChange={setField}
               required
+              disabled={isLoadingOptions}
             />
           </div>
 
@@ -508,6 +523,7 @@ export default function NovaOS() {
               error={errors.responsavel}
               onChange={setField}
               required
+              disabled={isLoadingOptions}
             />
             <SearchableLockedSelectField
               label="Tipo de serviço"
@@ -517,6 +533,7 @@ export default function NovaOS() {
               error={errors.tipo}
               onChange={setField}
               required
+              disabled={isLoadingOptions}
             />
           </div>
 
@@ -568,7 +585,7 @@ export default function NovaOS() {
           <Button type="button" variant="outline" className="sm:w-52 gap-2" onClick={resetForm} disabled={mutation.isPending}>
             <RotateCcw className="h-4 w-4" /> Limpar formulário
           </Button>
-          <Button type="submit" className="flex-1 gap-2" disabled={mutation.isPending}>
+          <Button type="submit" className="flex-1 gap-2" disabled={mutation.isPending || isLoadingOptions}>
             {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Salvar registro
           </Button>

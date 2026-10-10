@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Wrench } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { canAccessRoute } from "@/lib/authz";
+import type { AuthUser } from "@/lib/api-client";
 
 /**
  * Página de login real usando autenticação do Apps Script.
@@ -17,15 +19,26 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, status } = useAuth();
+  const { login, status, user } = useAuth();
   const [userLogin, setUserLogin] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const getInitialRoute = (user: AuthUser) => {
+    const from = (location.state as any)?.from?.pathname;
+    if (from && from !== "/" && canAccessRoute(user, from)) return from;
+    
+    // Fallbacks preferenciais se tentar acessar a raiz (/) ou sem "from"
+    if (canAccessRoute(user, "/relatorios")) return "/relatorios";
+    if (canAccessRoute(user, "/lubrificacao")) return "/lubrificacao";
+    if (canAccessRoute(user, "/os")) return "/os";
+    
+    return "/";
+  };
+
   // Se já autenticado, redireciona
-  if (status === "authenticated") {
-    const from = (location.state as any)?.from?.pathname || "/";
-    navigate(from, { replace: true });
+  if (status === "authenticated" && user) {
+    navigate(getInitialRoute(user), { replace: true });
     return null;
   }
 
@@ -35,9 +48,8 @@ export default function Login() {
 
     setLoading(true);
     try {
-      await login(userLogin.trim(), senha);
-      const from = (location.state as any)?.from?.pathname || "/";
-      navigate(from, { replace: true });
+      const authUser = await login(userLogin.trim(), senha);
+      navigate(getInitialRoute(authUser || user), { replace: true });
     } catch (err: any) {
       toast({
         title: "Erro de autenticação",

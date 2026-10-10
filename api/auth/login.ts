@@ -59,6 +59,7 @@ export default async function handler(
     const nome = String(gasResponse.nome || gasResponse.name || "");
     const userLogin = String(gasResponse.login || login);
     const unidade = String(gasResponse.unidade || gasResponse.unit || "");
+    const permissoes = (gasResponse.permissoes || []) as SessionPayload["permissoes"];
 
     if (!token) {
       console.error("[auth/login] GAS não retornou token");
@@ -76,6 +77,7 @@ export default async function handler(
       login: userLogin,
       unidade,
       criado_em: Date.now(),
+      permissoes,
     };
 
     const encrypted = await encryptSession(sessionPayload);
@@ -89,6 +91,7 @@ export default async function handler(
       nome,
       login: userLogin,
       unidade,
+      permissoes,
     });
   } catch (err) {
     console.error("[auth/login] Erro:", err);

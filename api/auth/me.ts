@@ -53,6 +53,7 @@ export default async function handler(
       nome: gasResponse.nome || session.nome,
       login: gasResponse.login || session.login,
       unidade: gasResponse.unidade || session.unidade,
+      permissoes: gasResponse.permissoes || session.permissoes || [],
     });
   } catch (err) {
     console.error("[auth/me] Erro:", err);
@@ -64,6 +65,7 @@ export default async function handler(
       nome: session.nome,
       login: session.login,
       unidade: session.unidade,
+      permissoes: session.permissoes || [],
     });
   }
 }
