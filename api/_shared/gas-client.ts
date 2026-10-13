@@ -72,6 +72,19 @@ export const ALLOWED_ACTIONS = new Set([
   // Serviços externos
   "servicos_externos_listar",
   "servicos_externos_criar",
+  // KPI operacional (somente leitura)
+  "kpi_operacional_health",
+  "kpi_operacional_resumo",
+  "kpi_operacional_equipamentos",
+  "kpi_operacional_eventos",
+  "kpi_operacional_paradas",
+  // KPI HH/custo (somente leitura)
+  "kpi_hh_custo_health",
+  "kpi_hh_custo_resumo",
+  "kpi_hh_custo_colaboradores",
+  "kpi_hh_custo_equipamentos",
+  "kpi_hh_custo_eventos",
+  "kpi_hh_custo_os",
 ]);
 
 // Actions de leitura que podem ser reenviadas com segurança
@@ -87,6 +100,17 @@ const READ_ACTIONS = new Set([
   "obras_listar",
   "lubrificacao_listar",
   "servicos_externos_listar",
+  "kpi_operacional_health",
+  "kpi_operacional_resumo",
+  "kpi_operacional_equipamentos",
+  "kpi_operacional_eventos",
+  "kpi_operacional_paradas",
+  "kpi_hh_custo_health",
+  "kpi_hh_custo_resumo",
+  "kpi_hh_custo_colaboradores",
+  "kpi_hh_custo_equipamentos",
+  "kpi_hh_custo_eventos",
+  "kpi_hh_custo_os",
 ]);
 
 // ── GAS Communication ──────────────────────────────────────────
