@@ -187,12 +187,21 @@ Para cada endpoint registrar:
 - módulo/ação AUTH62;
 - exemplo real sanitizado.
 
-## 7. Próximo passo após captura
+## 7. Estado da integração nesta branch
 
-1. completar os tipos em `src/lib/kpi-contract.ts`;
-2. adicionar somente as actions necessárias à whitelist do proxy;
-3. criar client/hook de leitura;
-4. testar autorização GESTAO e ADM;
+Já concluído em `feat/kpi-contract`:
+
+- actions KPI adicionadas à whitelist segura do proxy;
+- actions KPI classificadas como leitura no transporte GAS;
+- `src/lib/kpi-api.ts` criado com retorno `unknown` enquanto o schema não estiver comprovado;
+- teste de regressão criado para garantir que todas as actions documentadas permaneçam na whitelist.
+
+Ainda pendente:
+
+1. capturar o JSON real sanitizado dos endpoints ainda não documentados;
+2. completar os tipos específicos em `src/lib/kpi-contract.ts`;
+3. criar hooks TanStack Query tipados;
+4. testar autorização GESTAO e ADM em Preview;
 5. substituir cálculos legados de `Relatorios.tsx` pelo consumo dos contratos oficiais;
 6. somente então iniciar o redesign visual.
 
