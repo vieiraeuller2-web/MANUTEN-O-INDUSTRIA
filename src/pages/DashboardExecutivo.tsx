@@ -1,5 +1,14 @@
 import { useMemo, useState } from "react";
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
   Activity,
   AlertCircle,
   Clock3,
@@ -16,7 +25,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
+  useKpiHHCustoColaboradores,
+  useKpiHHCustoEquipamentos,
   useKpiHHCustoResumo,
+  useKpiOperacionalEquipamentos,
   useKpiOperacionalResumo,
 } from "@/hooks/use-kpi";
 import type {
@@ -93,6 +105,72 @@ function MetricCard({
   );
 }
 
+function RankingBarChart({
+  title,
+  description,
+  data,
+  nameKey,
+  valueKey,
+  valueFormatter,
+}: {
+  title: string;
+  description: string;
+  data: Record<string, string | number>[];
+  nameKey: string;
+  valueKey: string;
+  valueFormatter: (value: number) => string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">{title}</CardTitle>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </CardHeader>
+      <CardContent>
+        {data.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Sem dados no recorte atual.
+          </p>
+        ) : (
+          <div className="h-[320px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data}
+                layout="vertical"
+                margin={{ top: 4, right: 24, bottom: 4, left: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tickFormatter={(value) => valueFormatter(Number(value))}
+                  fontSize={11}
+                />
+                <YAxis
+                  type="category"
+                  dataKey={nameKey}
+                  width={110}
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip
+                  formatter={(value) => valueFormatter(Number(value))}
+                  labelFormatter={(label) => String(label)}
+                />
+                <Bar
+                  dataKey={valueKey}
+                  fill="hsl(var(--primary))"
+                  radius={[0, 4, 4, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function DashboardExecutivo() {
   const [draft, setDraft] = useState<CommonFilters>(EMPTY_FILTERS);
   const [filters, setFilters] = useState<CommonFilters>(EMPTY_FILTERS);
@@ -109,9 +187,20 @@ export default function DashboardExecutivo() {
 
   const operacional = useKpiOperacionalResumo(operacionalFilters);
   const custo = useKpiHHCustoResumo(custoFilters);
+  const operacionalEquipamentos =
+    useKpiOperacionalEquipamentos(operacionalFilters);
+  const custoColaboradores =
+    useKpiHHCustoColaboradores(custoFilters);
+  const custoEquipamentos =
+    useKpiHHCustoEquipamentos(custoFilters);
 
   const loading = operacional.isLoading || custo.isLoading;
-  const fetching = operacional.isFetching || custo.isFetching;
+  const fetching =
+    operacional.isFetching ||
+    custo.isFetching ||
+    operacionalEquipamentos.isFetching ||
+    custoColaboradores.isFetching ||
+    custoEquipamentos.isFetching;
   const error = operacional.error || custo.error;
 
   const applyFilters = () => setFilters(draft);
@@ -124,11 +213,92 @@ export default function DashboardExecutivo() {
   const refresh = () => {
     void operacional.refetch();
     void custo.refetch();
+    void operacionalEquipamentos.refetch();
+    void custoColaboradores.refetch();
+    void custoEquipamentos.refetch();
   };
 
   const op = operacional.data?.kpis;
   const hh = custo.data?.kpis;
   const topEquipamentos = operacional.data?.top_equipamentos ?? [];
+
+  const topCustoColaboradores = useMemo(
+    () =>
+      [...(custoColaboradores.data?.dados ?? [])]
+        .filter((item) => item.custo_confirmado != null)
+        .sort(
+          (a, b) =>
+            (b.custo_confirmado ?? 0) - (a.custo_confirmado ?? 0)
+        )
+        .slice(0, 10)
+        .map((item) => ({
+          nome: item.nome,
+          custo: item.custo_confirmado ?? 0,
+        })),
+    [custoColaboradores.data]
+  );
+
+  const topHHColaboradores = useMemo(
+    () =>
+      [...(custoColaboradores.data?.dados ?? [])]
+        .filter((item) => item.hh_total != null)
+        .sort((a, b) => (b.hh_total ?? 0) - (a.hh_total ?? 0))
+        .slice(0, 10)
+        .map((item) => ({
+          nome: item.nome,
+          hh: item.hh_total ?? 0,
+        })),
+    [custoColaboradores.data]
+  );
+
+  const topCustoEquipamentos = useMemo(
+    () =>
+      [...(custoEquipamentos.data?.dados ?? [])]
+        .filter((item) => item.custo_confirmado != null)
+        .sort(
+          (a, b) =>
+            (b.custo_confirmado ?? 0) - (a.custo_confirmado ?? 0)
+        )
+        .slice(0, 10)
+        .map((item) => ({
+          equipamento: item.equipamento,
+          custo: item.custo_confirmado ?? 0,
+        })),
+    [custoEquipamentos.data]
+  );
+
+  const topMttrEquipamentos = useMemo(
+    () =>
+      [...(operacionalEquipamentos.data?.equipamentos ?? [])]
+        .filter((item) => item.mttr_h != null)
+        .sort((a, b) => (b.mttr_h ?? 0) - (a.mttr_h ?? 0))
+        .slice(0, 10)
+        .map((item) => ({
+          equipamento: item.equipamento,
+          mttr: item.mttr_h ?? 0,
+        })),
+    [operacionalEquipamentos.data]
+  );
+
+  const topMtbfEquipamentos = useMemo(
+    () =>
+      [...(operacionalEquipamentos.data?.equipamentos ?? [])]
+        .filter(
+          (item) =>
+            item.mtbf_calendario_h != null &&
+            item.mtbf_intervalos_validos > 0
+        )
+        .sort(
+          (a, b) =>
+            (b.mtbf_calendario_h ?? 0) - (a.mtbf_calendario_h ?? 0)
+        )
+        .slice(0, 10)
+        .map((item) => ({
+          equipamento: item.equipamento,
+          mtbf: item.mtbf_calendario_h ?? 0,
+        })),
+    [operacionalEquipamentos.data]
+  );
 
   return (
     <div className="page-container pb-24">
@@ -391,6 +561,70 @@ export default function DashboardExecutivo() {
               </CardContent>
             </Card>
           </div>
+
+          <div className="mt-6 grid gap-4 xl:grid-cols-2">
+            <RankingBarChart
+              title="Custo de manutenção por equipamento"
+              description="Top 10 por custo confirmado no período filtrado."
+              data={topCustoEquipamentos}
+              nameKey="equipamento"
+              valueKey="custo"
+              valueFormatter={fmtCurrency}
+            />
+            <RankingBarChart
+              title="Custo por colaborador"
+              description="Custo confirmado agregado por colaborador; valor/hora individual não é exposto."
+              data={topCustoColaboradores}
+              nameKey="nome"
+              valueKey="custo"
+              valueFormatter={fmtCurrency}
+            />
+            <RankingBarChart
+              title="HH por colaborador"
+              description="Top 10 de carga de mão de obra no recorte atual."
+              data={topHHColaboradores}
+              nameKey="nome"
+              valueKey="hh"
+              valueFormatter={fmtHours}
+            />
+            <RankingBarChart
+              title="MTTR por equipamento"
+              description="Comparativo oficial do MTTR consolidado por equipamento."
+              data={topMttrEquipamentos}
+              nameKey="equipamento"
+              valueKey="mttr"
+              valueFormatter={fmtHours}
+            />
+            <RankingBarChart
+              title="MTBF calendário por equipamento"
+              description="Comparativo dos equipamentos com intervalos válidos de MTBF."
+              data={topMtbfEquipamentos}
+              nameKey="equipamento"
+              valueKey="mtbf"
+              valueFormatter={fmtHours}
+            />
+          </div>
+
+          <Card className="mt-6 border-dashed">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">
+                Próxima camada: evolução temporal
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p>
+                A evolução mensal/semanal de MTBF, MTTR, custo e HH será exibida
+                em gráficos de linha quando o backend publicar uma série temporal
+                oficial. O frontend não reconstruirá esses indicadores a partir
+                das OS brutas.
+              </p>
+              <p>
+                MTTR por colaborador também depende de uma regra oficial de
+                atribuição do evento ao colaborador; hoje o contrato individual
+                disponível é de HH e custo.
+              </p>
+            </CardContent>
+          </Card>
 
           <p className="mt-5 text-xs text-muted-foreground">
             Disponibilidade não é exibida: o contrato atual não possui
