@@ -18,7 +18,7 @@ const EditarOS = lazy(() => import("./pages/EditarOS"));
 const Estoque = lazy(() => import("./pages/Estoque"));
 const NotasFiscais = lazy(() => import("./pages/NotasFiscais"));
 const ServicosExternos = lazy(() => import("./pages/ServicosExternos"));
-const DashboardExecutivo = lazy(() => import("./pages/DashboardExecutivo"));
+const RelatoriosHub = lazy(() => import("./pages/RelatoriosHub"));
 const Obras = lazy(() => import("./pages/Obras"));
 const PlanosManutencao = lazy(() => import("./pages/PlanosManutencao"));
 const EquipamentoPublico = lazy(() => import("./pages/EquipamentoPublico"));
@@ -239,7 +239,7 @@ const App = () => (
               path="/relatorios"
               element={
                 <Protected>
-                  <DashboardExecutivo />
+                  <RelatoriosHub />
                 </Protected>
               }
             />
