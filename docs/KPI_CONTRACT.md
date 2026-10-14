@@ -162,30 +162,36 @@ Esse comportamento é legado e **não deve ser levado para o novo dashboard**.
 
 O novo dashboard deve consumir as APIs KPI oficiais.
 
-## 6. Contratos ainda pendentes de captura
+## 6. Contratos capturados no Web App publicado
 
-Antes de criar hooks de produção, capturar uma resposta real dos seguintes endpoints:
+Em 14/10/2026 foi feita uma captura estrutural read-only dos 11 endpoints KPI publicados. Foram registrados os nomes dos campos top-level, objetos internos e primeiro item das coleções, sem expor dados sensíveis.
 
-- `kpi_operacional_health`
-- `kpi_operacional_equipamentos`
-- `kpi_operacional_eventos`
-- `kpi_operacional_paradas`
-- `kpi_hh_custo_health`
-- `kpi_hh_custo_resumo`
-- `kpi_hh_custo_colaboradores`
-- `kpi_hh_custo_equipamentos`
-- `kpi_hh_custo_eventos`
-- `kpi_hh_custo_os`
+### Operacional
 
-Para cada endpoint registrar:
+- `kpi_operacional_health`: `success`, `api_version`, `status`, `fontes`, `qualidade`, `metodologia`, `versao`.
+- `kpi_operacional_resumo`: `filtros`, `kpis`, `metodologia`, `top_equipamentos`.
+- `kpi_operacional_equipamentos`: `total`, `equipamentos`.
+- `kpi_operacional_eventos`: paginação por `page` / `page_size` / `total_pages` e coleção `eventos`.
+- `kpi_operacional_paradas`: paginação por `page` / `page_size` / `total_pages`, `parada_fisica_total_h` e coleção `paradas`.
 
-- parâmetros aceitos;
-- payload completo;
-- paginação;
-- tipos nulos/opcionais;
-- mensagens/códigos de erro;
-- módulo/ação AUTH62;
-- exemplo real sanitizado.
+### HH/custo
+
+- `kpi_hh_custo_health`: `materializacao` e flag `custo_individual_exposto`.
+- `kpi_hh_custo_resumo`: `kpis`, `qualidade`, `observacao`.
+- `kpi_hh_custo_colaboradores`: coleção `dados` por colaborador.
+- `kpi_hh_custo_equipamentos`: coleção `dados` por equipamento.
+- `kpi_hh_custo_eventos`: paginação por `offset` / `limit` e coleção `dados`.
+- `kpi_hh_custo_os`: paginação por `offset` / `limit` e coleção `dados`.
+
+Os nomes dos campos estão tipados em `src/lib/kpi-contract.ts`.
+
+### Tipos ainda conservadores
+
+A captura confirmou nomes e estrutura, mas não percorreu valores suficientes para provar toda a nulabilidade e a forma interna de alguns campos compostos. Por isso:
+
+- métricas potencialmente ausentes usam `number | null`;
+- campos compostos como listas/textos agregados permanecem `unknown` onde o formato ainda não foi observado diretamente;
+- isso deve ser refinado somente após captura adicional, sem inferência.
 
 ## 7. Estado da integração nesta branch
 
@@ -198,12 +204,11 @@ Já concluído em `feat/kpi-contract`:
 
 Ainda pendente:
 
-1. capturar o JSON real sanitizado dos endpoints ainda não documentados;
-2. completar os tipos específicos em `src/lib/kpi-contract.ts`;
-3. criar hooks TanStack Query tipados;
-4. testar autorização GESTAO e ADM em Preview;
-5. substituir cálculos legados de `Relatorios.tsx` pelo consumo dos contratos oficiais;
-6. somente então iniciar o redesign visual.
+1. refinar apenas os tipos internos ainda marcados como `unknown` quando houver evidência real;
+2. criar hooks TanStack Query tipados;
+3. testar autorização GESTAO e ADM em Preview;
+4. substituir cálculos legados de `Relatorios.tsx` pelo consumo dos contratos oficiais;
+5. somente então iniciar o redesign visual.
 
 ## 8. Invariantes
 
