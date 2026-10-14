@@ -19,8 +19,12 @@ describe("RelatoriosHub", () => {
     expect(screen.getByText("CONTEUDO_TRADICIONAL")).toBeTruthy();
     expect(screen.queryByText("CONTEUDO_OFICIAL")).toBeNull();
 
-    fireEvent.click(screen.getByRole("tab", { name: /Indicadores oficiais/i }));
+    const oficiais = screen.getByRole("tab", { name: /Indicadores oficiais/i });
 
+    // Radix Tabs ativa o trigger em pointer/mouse down no navegador.
+    fireEvent.mouseDown(oficiais, { button: 0, ctrlKey: false });
+
+    expect(oficiais.getAttribute("aria-selected")).toBe("true");
     expect(screen.getByText("CONTEUDO_OFICIAL")).toBeTruthy();
   });
 });
