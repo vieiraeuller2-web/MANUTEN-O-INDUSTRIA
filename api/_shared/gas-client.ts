@@ -129,6 +129,13 @@ const KPI_GET_ACTIONS = new Set([
 
 // ── GAS Communication ──────────────────────────────────────────
 
+export function resolveGASMethodForAction(
+  action: string,
+  explicitMethod?: "GET" | "POST"
+): "GET" | "POST" {
+  return explicitMethod ?? (KPI_GET_ACTIONS.has(action) ? "GET" : "POST");
+}
+
 function getGASUrl(): string {
   const url = process.env.GAS_WEBAPP_URL;
   if (!url) throw new Error("GAS_WEBAPP_URL não configurada");
@@ -146,7 +153,7 @@ export async function callGAS(
   options?: { method?: "GET" | "POST" }
 ): Promise<GASResponse> {
   const action = String(body.action || "");
-  const method = options?.method ?? (KPI_GET_ACTIONS.has(action) ? "GET" : "POST");
+  const method = resolveGASMethodForAction(action, options?.method);
   const gasUrl = getGASUrl();
   const isRead = READ_ACTIONS.has(action);
 
