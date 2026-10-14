@@ -4,7 +4,7 @@ import {
   KPI_OPERACIONAL_ACTIONS,
   type KpiAction,
   type KpiFilters,
-  type KpiUnverifiedResponse,
+  type KpiResponseFor,
 } from "@/lib/kpi-contract";
 
 const KPI_ACTIONS = new Set<KpiAction>([
@@ -17,16 +17,15 @@ export function isKpiAction(action: string): action is KpiAction {
 }
 
 /**
- * Leitura genérica dos endpoints KPI enquanto os envelopes completos
- * de resposta ainda estão sendo capturados/homologados.
+ * Leitura tipada dos endpoints KPI oficiais.
  *
- * O retorno permanece unknown de propósito: não usar casting silencioso
- * em componentes de produção. Cada endpoint deve ganhar um tipo específico
- * quando seu JSON real for comprovado.
+ * O tipo de retorno é inferido pela action. Os campos cuja forma interna
+ * ainda não foi observada continuam como unknown no contrato específico,
+ * evitando casting silencioso ou inferência não comprovada.
  */
-export async function fetchKpi(
-  action: KpiAction,
+export async function fetchKpi<A extends KpiAction>(
+  action: A,
   filters: KpiFilters = {}
-): Promise<KpiUnverifiedResponse> {
-  return apiProxy<KpiUnverifiedResponse>(action, filters);
+): Promise<KpiResponseFor<A>> {
+  return apiProxy<KpiResponseFor<A>>(action, filters);
 }
