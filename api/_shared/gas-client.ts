@@ -113,6 +113,20 @@ const READ_ACTIONS = new Set([
   "kpi_hh_custo_os",
 ]);
 
+const KPI_GET_ACTIONS = new Set([
+  "kpi_operacional_health",
+  "kpi_operacional_resumo",
+  "kpi_operacional_equipamentos",
+  "kpi_operacional_eventos",
+  "kpi_operacional_paradas",
+  "kpi_hh_custo_health",
+  "kpi_hh_custo_resumo",
+  "kpi_hh_custo_colaboradores",
+  "kpi_hh_custo_equipamentos",
+  "kpi_hh_custo_eventos",
+  "kpi_hh_custo_os",
+]);
+
 // ── GAS Communication ──────────────────────────────────────────
 
 function getGASUrl(): string {
@@ -131,9 +145,9 @@ export async function callGAS(
   body: Record<string, unknown>,
   options?: { method?: "GET" | "POST" }
 ): Promise<GASResponse> {
-  const method = options?.method ?? "POST";
-  const gasUrl = getGASUrl();
   const action = String(body.action || "");
+  const method = options?.method ?? (KPI_GET_ACTIONS.has(action) ? "GET" : "POST");
+  const gasUrl = getGASUrl();
   const isRead = READ_ACTIONS.has(action);
 
   const controller = new AbortController();
