@@ -199,13 +199,14 @@ Já concluído em `feat/kpi-contract`:
 
 - actions KPI adicionadas à whitelist segura do proxy;
 - actions KPI classificadas como leitura no transporte GAS;
-- `src/lib/kpi-api.ts` criado com retorno `unknown` enquanto o schema não estiver comprovado;
-- teste de regressão criado para garantir que todas as actions documentadas permaneçam na whitelist.
+- `src/lib/kpi-api.ts` criado com retorno tipado por `action`;
+- hooks TanStack Query adicionados em `src/hooks/use-kpi.ts`;
+- testes de regressão cobrem whitelist, query keys, encaminhamento de filtros e `enabled=false`.
 
 Ainda pendente:
 
 1. refinar apenas os tipos internos ainda marcados como `unknown` quando houver evidência real;
-2. criar hooks TanStack Query tipados;
+2. validar localmente tsc, Vitest e build com os novos hooks;
 3. testar autorização GESTAO e ADM em Preview;
 4. substituir cálculos legados de `Relatorios.tsx` pelo consumo dos contratos oficiais;
 5. somente então iniciar o redesign visual.
