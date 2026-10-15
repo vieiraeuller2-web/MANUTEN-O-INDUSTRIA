@@ -49,6 +49,11 @@ export const ALLOWED_ACTIONS = new Set([
   "registrar_os",
   "listar_os_paginado",
   "opcoes_formulario_os",
+  // Técnico / Equipe (contratos confirmados no AUTH62)
+  "equipe_colaboradores",
+  "equipe_colaborador_historico",
+  "minhas_os",
+  "os_manual_tecnico",
   // Preventivas
   "preventivas_resumo",
   "preventivas_setores",
@@ -91,6 +96,9 @@ export const ALLOWED_ACTIONS = new Set([
 const READ_ACTIONS = new Set([
   "listar_os_paginado",
   "opcoes_formulario_os",
+  "equipe_colaboradores",
+  "equipe_colaborador_historico",
+  "minhas_os",
   "preventivas_resumo",
   "preventivas_setores",
   "preventivas_ativos",
@@ -113,7 +121,12 @@ const READ_ACTIONS = new Set([
   "kpi_hh_custo_os",
 ]);
 
-const KPI_GET_ACTIONS = new Set([
+const GET_ACTIONS = new Set([
+  // Leituras confirmadas de técnico/equipe
+  "equipe_colaboradores",
+  "equipe_colaborador_historico",
+  "minhas_os",
+  // KPIs publicados via GET
   "kpi_operacional_health",
   "kpi_operacional_resumo",
   "kpi_operacional_equipamentos",
@@ -133,7 +146,7 @@ export function resolveGASMethodForAction(
   action: string,
   explicitMethod?: "GET" | "POST"
 ): "GET" | "POST" {
-  return explicitMethod ?? (KPI_GET_ACTIONS.has(action) ? "GET" : "POST");
+  return explicitMethod ?? (GET_ACTIONS.has(action) ? "GET" : "POST");
 }
 
 function getGASUrl(): string {
