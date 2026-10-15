@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMinhasOS } from "@/hooks/use-tecnico";
+import { useDebounce } from "@/hooks/use-debounce";
 import { formatDataBr, formatHoraBr } from "@/lib/time-helpers";
 
 export default function TecnicoMinhasOS() {
@@ -12,23 +13,22 @@ export default function TecnicoMinhasOS() {
   const [tipo, setTipo] = useState("");
   const [status, setStatus] = useState("");
 
-  const query = useMinhasOS();
-  const lista = query.data?.os ?? [];
+  const dEquipamento = useDebounce(equipamento, 400);
+  const dTipo = useDebounce(tipo, 400);
+  const dStatus = useDebounce(status, 400);
 
-  const filtradas = useMemo(() => {
-    const eq = equipamento.trim().toLowerCase();
-    const tp = tipo.trim().toLowerCase();
-    const st = status.trim().toLowerCase();
+  const filters = useMemo(
+    () => ({
+      equipamento: dEquipamento.trim() || undefined,
+      tipo: dTipo.trim() || undefined,
+      status: dStatus.trim() || undefined,
+    }),
+    [dEquipamento, dTipo, dStatus]
+  );
 
-    return lista.filter((os) => {
-      if (eq && !os.equipamento.toLowerCase().includes(eq)) return false;
-      if (tp && !os.tipo.toLowerCase().includes(tp)) return false;
-      if (st && !os.status.toLowerCase().includes(st)) return false;
-      return true;
-    });
-  }, [lista, equipamento, tipo, status]);
-
-  const colaborador = query.data?.colaborador?.nome || "";
+  const query = useMinhasOS(filters);
+  const lista = query.allItems;
+  const colaborador = query.colaborador?.nome || "";
 
   return (
     <div className="page-container max-w-3xl pb-24">
@@ -45,7 +45,7 @@ export default function TecnicoMinhasOS() {
           disabled={query.isFetching}
           aria-label="Atualizar minhas OS"
         >
-          {query.isFetching ? (
+          {query.isFetching && !query.isFetchingNextPage ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <RefreshCw className="h-4 w-4" />
@@ -76,6 +76,22 @@ export default function TecnicoMinhasOS() {
               onChange={(e) => setStatus(e.target.value)}
             />
           </div>
+          {(equipamento || tipo || status) && (
+            <div className="mt-3 flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEquipamento("");
+                  setTipo("");
+                  setStatus("");
+                }}
+              >
+                Limpar filtros
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -103,7 +119,7 @@ export default function TecnicoMinhasOS() {
             </Button>
           </CardContent>
         </Card>
-      ) : filtradas.length === 0 ? (
+      ) : lista.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             <ClipboardList className="mx-auto mb-3 h-8 w-8" />
@@ -113,10 +129,10 @@ export default function TecnicoMinhasOS() {
       ) : (
         <div className="space-y-3">
           <div className="text-xs text-muted-foreground">
-            Exibindo {filtradas.length} de {query.data?.total ?? filtradas.length} OS
+            Exibindo {lista.length} de {query.total} OS
           </div>
 
-          {filtradas.map((os) => (
+          {lista.map((os) => (
             <Card key={os.id_os}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -176,6 +192,27 @@ export default function TecnicoMinhasOS() {
               </CardContent>
             </Card>
           ))}
+
+          {query.hasNextPage && (
+            <div className="flex justify-center pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => query.fetchNextPage()}
+                disabled={query.isFetchingNextPage}
+              >
+                {query.isFetchingNextPage ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Carregando mais...
+                  </>
+                ) : (
+                  "Carregar mais OS"
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
