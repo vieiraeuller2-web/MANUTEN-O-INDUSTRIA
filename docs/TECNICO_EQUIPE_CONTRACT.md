@@ -62,6 +62,20 @@ Tipos observados no primeiro item:
 
 A resposta não expôs hash/salt de senha nem campos de credencial de `USUARIOS`.
 
+## Schema real capturado — `equipe_colaborador_historico`
+
+Captura realizada em Preview em 2026-10-15, autenticado como ADM.
+
+Top-level observado:
+
+`success, colaborador, historico, versao`
+
+Objeto `colaborador` observado:
+
+`id_colaborador, nome, funcao, ativo, tipo_vinculo, contabilizar_hh_custo`
+
+O array `historico` veio vazio na primeira captura. Por isso os itens do histórico permanecem intencionalmente como `unknown[]` até existir uma amostra real.
+
 ## O que NÃO está confirmado ainda
 
 Não foi localizada evidência canônica de uma action HTTP vigente para:
