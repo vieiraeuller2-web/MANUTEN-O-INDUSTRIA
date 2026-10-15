@@ -76,6 +76,30 @@ Objeto `colaborador` observado:
 
 O array `historico` veio vazio na primeira captura. Por isso os itens do histórico permanecem intencionalmente como `unknown[]` até existir uma amostra real.
 
+## Schema real capturado — `minhas_os`
+
+Captura realizada em Preview em 2026-10-15, autenticado como TECNICO.
+
+Top-level observado:
+
+`success, colaborador, total, page, page_size, total_pages, filtros, os, versao`
+
+Objeto `colaborador`:
+
+`id_colaborador, nome`
+
+Objeto `filtros`:
+
+`equipamento, tipo, status`
+
+Item de `os`:
+
+`id_os, equipamento, setor, area, responsavel, tipo, data_inicio, hora_inicio, data_conclusao, hora_conclusao, horimetro, observacoes, status`
+
+Todos os campos observados no item de OS vieram como strings. Horas continuam tratadas como strings puras.
+
+A rota frontend `/tecnico` foi criada e exige `MINHAS_OS / VISUALIZAR`.
+
 ## O que NÃO está confirmado ainda
 
 Não foi localizada evidência canônica de uma action HTTP vigente para:
