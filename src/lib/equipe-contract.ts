@@ -34,3 +34,24 @@ export interface EquipeColaboradoresResponse {
   colaboradores: EquipeColaborador[];
   versao: string;
 }
+
+
+export interface EquipeColaboradorResumo {
+  id_colaborador: string;
+  nome: string;
+  funcao: string;
+  ativo: string;
+  tipo_vinculo: string;
+  contabilizar_hh_custo: string;
+}
+
+/**
+ * O array historico foi observado vazio na primeira captura.
+ * Não tipar os itens até existir evidência real de pelo menos um registro.
+ */
+export interface EquipeColaboradorHistoricoResponse {
+  success: boolean;
+  colaborador: EquipeColaboradorResumo;
+  historico: unknown[];
+  versao: string;
+}
