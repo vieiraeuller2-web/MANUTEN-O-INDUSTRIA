@@ -43,6 +43,25 @@ Cabeçalhos observados:
 
 Conclusão: colaborador e usuário são entidades distintas e o vínculo oficial é feito por `ID_COLABORADOR`.
 
+## Schema real capturado — `equipe_colaboradores`
+
+Captura realizada em Preview em 2026-10-15, autenticado como ADM.
+
+Top-level observado:
+
+`success, total, colaboradores, versao`
+
+Item de `colaboradores` observado:
+
+`id_colaborador, nome, nome_bd, funcao, especialidade, ativo, status_cadastro, tipo_vinculo, contabilizar_hh_custo, custo_atual`
+
+Tipos observados no primeiro item:
+
+- strings: `id_colaborador`, `nome`, `nome_bd`, `funcao`, `especialidade`, `ativo`, `status_cadastro`, `tipo_vinculo`, `contabilizar_hh_custo`;
+- `custo_atual`: `null` no primeiro item observado; tipo definitivo ainda não fechado.
+
+A resposta não expôs hash/salt de senha nem campos de credencial de `USUARIOS`.
+
 ## O que NÃO está confirmado ainda
 
 Não foi localizada evidência canônica de uma action HTTP vigente para:
