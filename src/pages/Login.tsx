@@ -29,6 +29,7 @@ export default function Login() {
     if (from && from !== "/" && canAccessRoute(user, from)) return from;
     
     // Fallbacks preferenciais se tentar acessar a raiz (/) ou sem "from"
+    if (canAccessRoute(user, "/tecnico")) return "/tecnico";
     if (canAccessRoute(user, "/relatorios")) return "/relatorios";
     if (canAccessRoute(user, "/lubrificacao")) return "/lubrificacao";
     if (canAccessRoute(user, "/os")) return "/os";
