@@ -100,6 +100,22 @@ Todos os campos observados no item de OS vieram como strings. Horas continuam tr
 
 A rota frontend `/tecnico` foi criada e exige `MINHAS_OS / VISUALIZAR`.
 
+### Paginação e filtros confirmados de `minhas_os`
+
+Validação em Preview em 2026-10-15:
+
+- `page`: controla a página numérica;
+- `page_size`: controla a quantidade retornada;
+- `equipamento`: filtro aplicado no backend;
+- `tipo`: campo de filtro publicado no contrato;
+- `status`: campo de filtro publicado no contrato.
+
+Teste real:
+- `page=2&page_size=1` retornou página 2 com exatamente 1 OS;
+- filtro de equipamento inexistente retornou `total=0` e nenhuma OS.
+
+O frontend deve paginar e filtrar no backend; não deve filtrar apenas a primeira página localmente.
+
 ## O que NÃO está confirmado ainda
 
 Não foi localizada evidência canônica de uma action HTTP vigente para:
