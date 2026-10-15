@@ -42,6 +42,7 @@ export interface RoutePermission {
  * para elas, apenas o wildcard "*" concede acesso (fail closed para os demais).
  */
 export const ROUTE_PERMISSION_MAP: RoutePermission[] = [
+  { pattern: "/tecnico", modulo: "MINHAS_OS", acao: "visualizar" },
   { pattern: "/preventivas", modulo: "PLANO_MANUTENCAO", acao: "visualizar" },
   { pattern: "/planos-manutencao", modulo: "PLANO_MANUTENCAO", acao: "visualizar" },
   { pattern: "/nf", modulo: "NOTAS_FISCAIS", acao: "visualizar" },
