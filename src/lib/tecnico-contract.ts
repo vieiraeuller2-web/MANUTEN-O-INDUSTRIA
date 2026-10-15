@@ -9,6 +9,14 @@ export interface TecnicoMinhasOSFiltros {
   status: string;
 }
 
+export interface TecnicoMinhasOSParams {
+  page?: number;
+  page_size?: number;
+  equipamento?: string;
+  tipo?: string;
+  status?: string;
+}
+
 export interface TecnicoMinhaOS {
   id_os: string;
   equipamento: string;
