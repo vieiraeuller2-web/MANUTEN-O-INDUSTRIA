@@ -131,6 +131,15 @@ describe("canAccessRoute - Nova Lógica Baseada em Módulos (authz)", () => {
     expect(canAccessRoute(user, "/servicos-externos")).toBe(true);
   });
 
+  it("TECNICO com MINHAS_OS acessa a area tecnica", () => {
+    const user = mockUser("TECNICO", [
+      { modulo: "MINHAS_OS", visualizar: true },
+    ]);
+    expect(canAccessRoute(user, "/tecnico")).toBe(true);
+    expect(canAccessRoute(user, "/os")).toBe(false);
+    expect(canAccessRoute(user, "/lubrificacao")).toBe(false);
+  });
+
   it("rota / usa o módulo LUBRIFICACAO", () => {
     const user = mockUser("TECNICO", [{ modulo: "LUBRIFICACAO", visualizar: true }]);
     expect(canAccessRoute(user, "/")).toBe(true);
