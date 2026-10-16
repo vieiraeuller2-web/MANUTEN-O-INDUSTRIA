@@ -24,6 +24,7 @@ const PlanosManutencao = lazy(() => import("./pages/PlanosManutencao"));
 const EquipamentoPublico = lazy(() => import("./pages/EquipamentoPublico"));
 const TecnicoMinhasOS = lazy(() => import("./pages/TecnicoMinhasOS"));
 const TecnicoNovaOS = lazy(() => import("./pages/TecnicoNovaOS"));
+const Equipe = lazy(() => import("./pages/Equipe"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -154,6 +155,14 @@ const App = () => (
               element={
                 <Protected>
                   <TecnicoMinhasOS />
+                </Protected>
+              }
+            />
+            <Route
+              path="/equipe"
+              element={
+                <Protected>
+                  <Equipe />
                 </Protected>
               }
             />
