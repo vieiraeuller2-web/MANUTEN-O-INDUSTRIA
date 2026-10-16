@@ -23,6 +23,7 @@ const Obras = lazy(() => import("./pages/Obras"));
 const PlanosManutencao = lazy(() => import("./pages/PlanosManutencao"));
 const EquipamentoPublico = lazy(() => import("./pages/EquipamentoPublico"));
 const TecnicoMinhasOS = lazy(() => import("./pages/TecnicoMinhasOS"));
+const TecnicoNovaOS = lazy(() => import("./pages/TecnicoNovaOS"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -140,6 +141,14 @@ const App = () => (
             />
 
             {/* Rotas protegidas por perfil */}
+            <Route
+              path="/tecnico/nova"
+              element={
+                <Protected>
+                  <TecnicoNovaOS />
+                </Protected>
+              }
+            />
             <Route
               path="/tecnico"
               element={
