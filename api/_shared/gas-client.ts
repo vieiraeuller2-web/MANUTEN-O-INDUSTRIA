@@ -52,6 +52,7 @@ export const ALLOWED_ACTIONS = new Set([
   // Técnico / Equipe (contratos confirmados no AUTH62)
   "equipe_colaboradores",
   "equipe_colaborador_historico",
+  "equipe_colaborador_criar",
   "equipe_tecnicos",
   "equipe_tecnico_criar",
   "equipe_tecnico_status",
