@@ -52,6 +52,10 @@ export const ALLOWED_ACTIONS = new Set([
   // Técnico / Equipe (contratos confirmados no AUTH62)
   "equipe_colaboradores",
   "equipe_colaborador_historico",
+  "equipe_tecnicos",
+  "equipe_tecnico_criar",
+  "equipe_tecnico_status",
+  "equipe_tecnico_redefinir_senha",
   "minhas_os",
   "os_manual_tecnico",
   // Preventivas
@@ -98,6 +102,7 @@ const READ_ACTIONS = new Set([
   "opcoes_formulario_os",
   "equipe_colaboradores",
   "equipe_colaborador_historico",
+  "equipe_tecnicos",
   "minhas_os",
   "preventivas_resumo",
   "preventivas_setores",
@@ -125,6 +130,7 @@ const GET_ACTIONS = new Set([
   // Leituras confirmadas de técnico/equipe
   "equipe_colaboradores",
   "equipe_colaborador_historico",
+  "equipe_tecnicos",
   "minhas_os",
   // KPIs publicados via GET
   "kpi_operacional_health",
