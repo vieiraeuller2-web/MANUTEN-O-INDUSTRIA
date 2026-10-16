@@ -13,6 +13,7 @@ describe("resolveGASMethodForAction", () => {
   it("usa GET para leituras confirmadas de técnico e equipe", () => {
     expect(resolveGASMethodForAction("equipe_colaboradores")).toBe("GET");
     expect(resolveGASMethodForAction("equipe_colaborador_historico")).toBe("GET");
+    expect(resolveGASMethodForAction("equipe_tecnicos")).toBe("GET");
     expect(resolveGASMethodForAction("minhas_os")).toBe("GET");
   });
 
@@ -32,12 +33,17 @@ describe("ALLOWED_ACTIONS técnico/equipe", () => {
   it("libera apenas os contratos técnicos auditados nesta etapa", () => {
     expect(ALLOWED_ACTIONS.has("equipe_colaboradores")).toBe(true);
     expect(ALLOWED_ACTIONS.has("equipe_colaborador_historico")).toBe(true);
+    expect(ALLOWED_ACTIONS.has("equipe_tecnicos")).toBe(true);
+    expect(ALLOWED_ACTIONS.has("equipe_tecnico_criar")).toBe(true);
+    expect(ALLOWED_ACTIONS.has("equipe_tecnico_status")).toBe(true);
+    expect(ALLOWED_ACTIONS.has("equipe_tecnico_redefinir_senha")).toBe(true);
     expect(ALLOWED_ACTIONS.has("minhas_os")).toBe(true);
     expect(ALLOWED_ACTIONS.has("os_manual_tecnico")).toBe(true);
   });
 
-  it("não inventa action administrativa de criação de técnico", () => {
-    expect(ALLOWED_ACTIONS.has("criar_usuario_tecnico")).toBe(false);
-    expect(ALLOWED_ACTIONS.has("equipe_criar_tecnico")).toBe(false);
+  it("mantém escritas administrativas de técnico como POST", () => {
+    expect(resolveGASMethodForAction("equipe_tecnico_criar")).toBe("POST");
+    expect(resolveGASMethodForAction("equipe_tecnico_status")).toBe("POST");
+    expect(resolveGASMethodForAction("equipe_tecnico_redefinir_senha")).toBe("POST");
   });
 });
