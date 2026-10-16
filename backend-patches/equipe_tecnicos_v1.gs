@@ -3,6 +3,7 @@
  *
  * Actions:
  * - equipe_tecnicos                  -> EQUIPE_COLABORADORES / VISUALIZAR
+ * - equipe_colaborador_criar         -> EQUIPE_COLABORADORES / CRIAR
  * - equipe_tecnico_criar            -> EQUIPE_COLABORADORES / CRIAR
  * - equipe_tecnico_status           -> EQUIPE_COLABORADORES / EDITAR
  * - equipe_tecnico_redefinir_senha  -> EQUIPE_COLABORADORES / EXECUTAR
@@ -226,6 +227,121 @@ function equipe_tecnicos(params) {
     tecnicos: itens,
     versao: "EQUIPE_TECNICOS_V1"
   };
+}
+
+
+function equipe_colaborador_criar(params) {
+  params = params || {};
+  var gate = eqTecAutorizar_(params, "CRIAR");
+  if (!gate.ok) return gate.response;
+
+  var nome = eqTecTxt_(params.nome);
+  var nomeBd = eqTecTxt_(params.nome_bd || params.nome).toUpperCase();
+  var funcao = eqTecTxt_(params.funcao);
+  var especialidade = eqTecTxt_(params.especialidade);
+  var tipoVinculo = eqTecTxt_(params.tipo_vinculo);
+  var contabilizar = eqTecSimNao_(params.contabilizar_hh_custo);
+
+  if (!nome || !funcao) {
+    return {
+      success: false,
+      code: "CAMPOS_OBRIGATORIOS",
+      message: "Nome e função são obrigatórios."
+    };
+  }
+
+  if (contabilizar !== "SIM" && contabilizar !== "NAO") {
+    return {
+      success: false,
+      code: "HH_CUSTO_INVALIDO",
+      message: "contabilizar_hh_custo deve ser SIM ou NAO."
+    };
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    var ss = eqTecSpreadsheet_();
+    var shC = eqTecExigirAba_(ss, EQTEC_ABA_COLABORADORES);
+
+    var metaC = eqTecMapaCabecalhos_(shC);
+    eqTecExigirColunas_(
+      metaC.map,
+      [
+        "ID_COLABORADOR", "NOME_EXIBICAO", "NOME_BD_EXATO",
+        "NOME_NORMALIZADO", "FUNCAO", "ESPECIALIDADE", "ATIVO",
+        "STATUS_CADASTRO", "DATA_CADASTRO", "OBSERVACAO",
+        "TIPO_VINCULO", "CONTABILIZAR_HH_CUSTO"
+      ],
+      shC.getName()
+    );
+
+    var colaboradores = eqTecLerObjetos_(shC);
+    var nomeNorm = eqTecNorm_(nomeBd);
+
+    var existente = colaboradores.find(function(c) {
+      return eqTecNorm_(c.NOME_NORMALIZADO || c.NOME_BD_EXATO || c.NOME_EXIBICAO) === nomeNorm;
+    });
+
+    if (existente) {
+      return {
+        success: false,
+        code: "COLABORADOR_DUPLICADO",
+        message: "Já existe colaborador com esse nome.",
+        id_colaborador: eqTecTxt_(existente.ID_COLABORADOR)
+      };
+    }
+
+    var idsCol = {};
+    colaboradores.forEach(function(c) {
+      idsCol[eqTecTxt_(c.ID_COLABORADOR)] = true;
+    });
+
+    var novoId = eqTecGerarId_("COL-", idsCol);
+    var agora = new Date();
+
+    eqTecAppendPorCabecalho_(shC, {
+      ID_COLABORADOR: novoId,
+      NOME_EXIBICAO: nome,
+      NOME_BD_EXATO: nomeBd,
+      NOME_NORMALIZADO: nomeNorm,
+      FUNCAO: funcao,
+      ESPECIALIDADE: especialidade,
+      ATIVO: "SIM",
+      STATUS_CADASTRO: "VALIDADO",
+      DATA_CADASTRO: agora,
+      OBSERVACAO: "Cadastro via equipe_colaborador_criar.",
+      TIPO_VINCULO: tipoVinculo,
+      CONTABILIZAR_HH_CUSTO: contabilizar
+    });
+
+    return {
+      success: true,
+      code: "COLABORADOR_CRIADO",
+      colaborador: {
+        id_colaborador: novoId,
+        nome: nome,
+        nome_bd: nomeBd,
+        funcao: funcao,
+        especialidade: especialidade,
+        ativo: "SIM",
+        status_cadastro: "VALIDADO",
+        tipo_vinculo: tipoVinculo,
+        contabilizar_hh_custo: contabilizar
+      },
+      versao: "EQUIPE_TECNICOS_V1"
+    };
+  } catch (error) {
+    console.error("[equipe_colaborador_criar]", error);
+    return {
+      success: false,
+      code: "ERRO_INTERNO",
+      message: "Não foi possível criar o colaborador."
+    };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
 }
 
 function equipe_tecnico_criar(params) {
