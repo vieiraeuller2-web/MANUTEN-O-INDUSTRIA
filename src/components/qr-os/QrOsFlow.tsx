@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, type FormEvent } from "react";
-import { Loader2, Wrench, AlertCircle, CheckCircle2, ChevronRight, LogOut, ArrowLeft } from "lucide-react";
+import { Loader2, Wrench, AlertCircle, CheckCircle2, ChevronRight, LogOut, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,7 @@ export default function QrOsFlow({ codigo, onSuccess }: QrOsFlowProps) {
   const [loginForm, setLoginForm] = useState({ login: "", senha: "" });
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [mostrarSenhaQr, setMostrarSenhaQr] = useState(false);
 
   // Formulário OS
   const [osForm, setOsForm] = useState({
@@ -191,14 +192,29 @@ export default function QrOsFlow({ codigo, onSuccess }: QrOsFlowProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="senha">Senha</Label>
-              <Input
-                id="senha"
-                type="password"
-                value={loginForm.senha}
-                onChange={(e) => setLoginForm({ ...loginForm, senha: e.target.value })}
-                className="bg-slate-900 border-slate-700 h-12 text-lg"
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <Input
+                  id="senha"
+                  type={mostrarSenhaQr ? "text" : "password"}
+                  value={loginForm.senha}
+                  onChange={(e) => setLoginForm({ ...loginForm, senha: e.target.value })}
+                  className="bg-slate-900 border-slate-700 h-12 pr-12 text-lg"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenhaQr((value) => !value)}
+                  className="absolute right-0 top-0 flex h-full w-12 items-center justify-center text-slate-400 transition-colors hover:text-white"
+                  aria-label={mostrarSenhaQr ? "Ocultar senha" : "Mostrar senha"}
+                  title={mostrarSenhaQr ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {mostrarSenhaQr ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
             {loginError && (
               <div className="p-3 bg-red-900/30 border border-red-900 text-red-200 rounded-md text-sm flex items-start gap-2">
