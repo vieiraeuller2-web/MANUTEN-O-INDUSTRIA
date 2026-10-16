@@ -118,7 +118,12 @@ export async function apiProxy<T = Record<string, unknown>>(
   }
 
   if (!res.ok || data.success === false) {
-    throw new Error(data.message || "Erro na requisição");
+    throw new Error(
+      data.message ||
+        data.error ||
+        data.erro ||
+        "Erro na requisição"
+    );
   }
 
   return data as T;
