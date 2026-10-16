@@ -11,10 +11,10 @@
  *      1. se existir regra wildcard (modulo "*"), ela é usada;
  *      2. somente se NÃO existir wildcard, usa a regra específica do módulo.
  *  - Rota/tela exige a ação definida no mapa (padrão: visualizar).
- *  - Perfil (ADM/PCM/...) NÃO é usado para decidir acesso.
+ *  - Perfil só é usado quando a rota é pessoal/contextual (ex.: área exclusiva do TECNICO).
  */
 import { matchPath } from "react-router-dom";
-import type { AuthUser, Permissao } from "@/lib/api-client";
+import type { AuthUser, Permissao, Perfil } from "@/lib/api-client";
 
 export type AcaoAuth62 = "visualizar" | "criar" | "editar" | "excluir" | "executar";
 
