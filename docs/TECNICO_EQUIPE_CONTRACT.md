@@ -116,6 +116,18 @@ Teste real:
 
 O frontend deve paginar e filtrar no backend; não deve filtrar apenas a primeira página localmente.
 
+## Regra de unidade para usuários TECNICO
+
+Regra operacional definida em 2026-10-16:
+
+- todo usuário com `PERFIL = TECNICO` deve usar `UNIDADE = TH30`;
+- os usuários TECNICO existentes foram regularizados para `TH30`;
+- o futuro fluxo de cadastro de técnicos deve preencher `TH30` automaticamente e não depender de digitação manual;
+- a unidade não deve ser escolhida livremente pelo técnico no cadastro;
+- alterações futuras dessa unidade exigem decisão explícita de negócio.
+
+Essa regra existe porque endpoints autenticados como `opcoes_formulario_os` exigem uma unidade presente na sessão.
+
 ## O que NÃO está confirmado ainda
 
 Não foi localizada evidência canônica de uma action HTTP vigente para:
