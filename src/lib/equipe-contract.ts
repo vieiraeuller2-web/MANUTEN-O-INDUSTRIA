@@ -1,6 +1,9 @@
 export const EQUIPE_ACTIONS = [
   "equipe_colaboradores",
   "equipe_colaborador_historico",
+  "equipe_colaborador_criar",
+  "equipe_tecnicos",
+  "equipe_tecnico_criar",
 ] as const;
 
 export type EquipeAction = (typeof EQUIPE_ACTIONS)[number];
@@ -54,4 +57,49 @@ export interface EquipeColaboradorHistoricoResponse {
   colaborador: EquipeColaboradorResumo;
   historico: unknown[];
   versao: string;
+}
+
+
+export interface EquipeTecnicoResumo {
+  id_usuario: string;
+  nome: string;
+  login: string;
+  perfil: "TECNICO";
+  id_colaborador: string;
+  unidade: string;
+  ativo: string;
+  primeiro_acesso: string;
+  ultimo_login?: string;
+  credencial_tipo?: string;
+  colaborador: {
+    nome: string;
+    funcao: string;
+    especialidade: string;
+    ativo: string;
+    status_cadastro: string;
+    tipo_vinculo: string;
+    contabilizar_hh_custo: string;
+  };
+}
+
+export interface EquipeTecnicosResponse {
+  success: boolean;
+  total: number;
+  tecnicos: EquipeTecnicoResumo[];
+  versao: string;
+}
+
+export interface CriarColaboradorPayload {
+  nome: string;
+  nome_bd?: string;
+  funcao: string;
+  especialidade?: string;
+  tipo_vinculo?: string;
+  contabilizar_hh_custo: "SIM" | "NAO";
+}
+
+export interface CriarTecnicoPayload extends CriarColaboradorPayload {
+  login: string;
+  senha: string;
+  id_colaborador?: string;
 }
