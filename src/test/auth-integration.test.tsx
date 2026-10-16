@@ -159,6 +159,26 @@ describe("canAccessRoute - Nova Lógica Baseada em Módulos (authz)", () => {
     expect(canAccessRoute(user, "/lubrificacao")).toBe(false);
   });
 
+  it("rotas pessoais de tecnico nao sao liberadas pelo wildcard de ADM", () => {
+    const adm = mockUser("ADM", [
+      { modulo: "*", visualizar: true, criar: true, editar: true, excluir: true, executar: true },
+    ]);
+    expect(canAccessRoute(adm, "/tecnico")).toBe(false);
+    expect(canAccessRoute(adm, "/tecnico/nova")).toBe(false);
+  });
+
+  it("PCM e GESTAO nao acessam rotas pessoais de tecnico mesmo com permissao equivalente", () => {
+    const pcm = mockUser("PCM", [{ modulo: "MINHAS_OS", visualizar: true }]);
+    const gestao = mockUser("GESTAO", [{ modulo: "OS_MANUAL", criar: true }]);
+    expect(canAccessRoute(pcm, "/tecnico")).toBe(false);
+    expect(canAccessRoute(gestao, "/tecnico/nova")).toBe(false);
+  });
+
+  it("EQUIPE_COLABORADORES libera a tela de equipe", () => {
+    const pcm = mockUser("PCM", [{ modulo: "EQUIPE_COLABORADORES", visualizar: true }]);
+    expect(canAccessRoute(pcm, "/equipe")).toBe(true);
+  });
+
   it("rota / usa o módulo LUBRIFICACAO", () => {
     const user = mockUser("TECNICO", [{ modulo: "LUBRIFICACAO", visualizar: true }]);
     expect(canAccessRoute(user, "/")).toBe(true);
