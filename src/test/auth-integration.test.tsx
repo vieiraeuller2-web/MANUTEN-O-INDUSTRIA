@@ -64,8 +64,10 @@ describe("canAccessRoute - Nova Lógica Baseada em Módulos (authz)", () => {
     expect(canAccessRoute(user, "/os")).toBe(true);
   });
 
-  it("B. ADM com wildcard acessa uma segunda rota de módulo diferente", () => {
-    const user = mockUser("ADM", [{ modulo: "*", visualizar: true }]);
+  it("B. ADM com wildcard completo acessa rota que exige criação", () => {
+    const user = mockUser("ADM", [
+      { modulo: "*", visualizar: true, criar: true },
+    ]);
     expect(canAccessRoute(user, "/lubrificacao")).toBe(true);
     expect(canAccessRoute(user, "/os/nova")).toBe(true);
   });
@@ -75,9 +77,16 @@ describe("canAccessRoute - Nova Lógica Baseada em Módulos (authz)", () => {
     expect(canAccessRoute(user, "/os")).toBe(true);
   });
 
-  it("D. LANCAMENTO visualizar=true libera /os/nova", () => {
-    const user = mockUser("TECNICO", [{ modulo: "LANCAMENTO", visualizar: true }]);
-    expect(canAccessRoute(user, "/os/nova")).toBe(true);
+  it("D. LANCAMENTO exige criar=true para liberar /os/nova", () => {
+    const apenasLeitura = mockUser("TECNICO", [
+      { modulo: "LANCAMENTO", visualizar: true, criar: false },
+    ]);
+    const podeCriar = mockUser("PCM", [
+      { modulo: "LANCAMENTO", visualizar: true, criar: true },
+    ]);
+
+    expect(canAccessRoute(apenasLeitura, "/os/nova")).toBe(false);
+    expect(canAccessRoute(podeCriar, "/os/nova")).toBe(true);
   });
 
   it("E. usuário sem wildcard e sem módulo requerido é bloqueado", () => {
