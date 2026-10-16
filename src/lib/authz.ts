@@ -27,6 +27,12 @@ export interface RoutePermission {
   modulo: string;
   /** Ação exigida para abrir a tela */
   acao: AcaoAuth62;
+  /**
+   * Restrição de contexto/papel quando a tela é pessoal e não deve ser
+   * liberada pelo wildcard administrativo. A autorização do backend continua
+   * sendo obrigatória; isto apenas impede UX/rota incoerente.
+   */
+  perfis?: Perfil[];
 }
 
 /**
@@ -42,8 +48,9 @@ export interface RoutePermission {
  * para elas, apenas o wildcard "*" concede acesso (fail closed para os demais).
  */
 export const ROUTE_PERMISSION_MAP: RoutePermission[] = [
-  { pattern: "/tecnico/nova", modulo: "OS_MANUAL", acao: "criar" },
-  { pattern: "/tecnico", modulo: "MINHAS_OS", acao: "visualizar" },
+  { pattern: "/tecnico/nova", modulo: "OS_MANUAL", acao: "criar", perfis: ["TECNICO"] },
+  { pattern: "/tecnico", modulo: "MINHAS_OS", acao: "visualizar", perfis: ["TECNICO"] },
+  { pattern: "/equipe", modulo: "EQUIPE_COLABORADORES", acao: "visualizar" },
   { pattern: "/preventivas", modulo: "PLANO_MANUTENCAO", acao: "visualizar" },
   { pattern: "/planos-manutencao", modulo: "PLANO_MANUTENCAO", acao: "visualizar" },
   { pattern: "/nf", modulo: "NOTAS_FISCAIS", acao: "visualizar" },
@@ -129,6 +136,9 @@ export function canAccessRoute(user: AuthUser | null | undefined, path: string):
   if (isPublicRoute(path)) return true;
   if (!user) return false;
   const rp = resolveRoutePermission(path);
-  if (rp) return canAccessModule(user.permissoes, rp.modulo, rp.acao);
+  if (rp) {
+    if (rp.perfis && !rp.perfis.includes(user.perfil)) return false;
+    return canAccessModule(user.permissoes, rp.modulo, rp.acao);
+  }
   return canAccessModule(user.permissoes, null, "visualizar");
 }
