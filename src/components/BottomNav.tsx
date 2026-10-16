@@ -14,17 +14,19 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth, canAccessRoute } from "@/contexts/AuthContext";
+import type { Perfil } from "@/lib/api-client";
 
 interface NavItem {
   path: string;
   icon: typeof Droplets;
   label: string;
   title?: string;
+  perfis?: Perfil[];
 }
 
 const allNavItems: NavItem[] = [
-  { path: "/tecnico", icon: UserRound, label: "Minhas OS" },
-  { path: "/tecnico/nova", icon: PlusCircle, label: "Nova OS" },
+  { path: "/tecnico", icon: UserRound, label: "Minhas OS", perfis: ["TECNICO"] },
+  { path: "/tecnico/nova", icon: PlusCircle, label: "Nova OS", perfis: ["TECNICO"] },
   { path: "/equipe", icon: Users, label: "Equipe", title: "Equipe / Colaboradores" },
   { path: "/", icon: Droplets, label: "Lubrif." },
   { path: "/os/nova", icon: PlusCircle, label: "Lançar" },
@@ -48,9 +50,10 @@ export default function BottomNav() {
 
 
   // Filtra itens visíveis pelo perfil
-  const visibleItems = allNavItems.filter((item) =>
-    canAccessRoute(user, item.path)
-  );
+  const visibleItems = allNavItems.filter((item) => {
+    if (item.perfis && !item.perfis.includes(user.perfil)) return false;
+    return canAccessRoute(user, item.path);
+  });
 
   const handleLogout = async () => {
     await logout();
