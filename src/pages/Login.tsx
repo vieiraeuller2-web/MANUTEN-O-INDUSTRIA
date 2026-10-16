@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Wrench } from "lucide-react";
+import { Eye, EyeOff, Loader2, Wrench } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessRoute } from "@/lib/authz";
 import type { AuthUser } from "@/lib/api-client";
@@ -22,6 +22,7 @@ export default function Login() {
   const { login, status, user } = useAuth();
   const [userLogin, setUserLogin] = useState("");
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const getInitialRoute = (user: AuthUser) => {
@@ -94,16 +95,32 @@ export default function Login() {
 
         <div className="space-y-2">
           <Label htmlFor="senha-field">Senha</Label>
-          <Input
-            id="senha-field"
-            type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            required
-            minLength={4}
-            autoComplete="current-password"
-            placeholder="Sua senha"
-          />
+          <div className="relative">
+            <Input
+              id="senha-field"
+              type={mostrarSenha ? "text" : "password"}
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              required
+              minLength={4}
+              autoComplete="current-password"
+              placeholder="Sua senha"
+              className="pr-11"
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarSenha((value) => !value)}
+              className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+              aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+              title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+            >
+              {mostrarSenha ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
 
         <Button
