@@ -23,6 +23,7 @@ interface NavItem {
 
 const allNavItems: NavItem[] = [
   { path: "/tecnico", icon: UserRound, label: "Minhas OS" },
+  { path: "/tecnico/nova", icon: PlusCircle, label: "Nova OS" },
   { path: "/", icon: Droplets, label: "Lubrif." },
   { path: "/os/nova", icon: PlusCircle, label: "Lançar" },
   { path: "/os", icon: ClipboardList, label: "Histórico" },
