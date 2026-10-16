@@ -131,6 +131,16 @@ describe("canAccessRoute - Nova Lógica Baseada em Módulos (authz)", () => {
     expect(canAccessRoute(user, "/servicos-externos")).toBe(true);
   });
 
+  it("TECNICO com OS_MANUAL cria pela rota tecnica sem abrir lancamento administrativo", () => {
+    const user = mockUser("TECNICO", [
+      { modulo: "OS_MANUAL", visualizar: true, criar: true },
+      { modulo: "LANCAMENTO", visualizar: true, criar: false },
+    ]);
+
+    expect(canAccessRoute(user, "/tecnico/nova")).toBe(true);
+    expect(canAccessRoute(user, "/os/nova")).toBe(false);
+  });
+
   it("TECNICO com MINHAS_OS acessa a area tecnica", () => {
     const user = mockUser("TECNICO", [
       { modulo: "MINHAS_OS", visualizar: true },
