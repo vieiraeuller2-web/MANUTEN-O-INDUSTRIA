@@ -53,6 +53,8 @@ export const ALLOWED_ACTIONS = new Set([
   "equipe_colaboradores",
   "equipe_colaborador_historico",
   "equipe_colaborador_criar",
+  "equipe_acessos",
+  "equipe_acesso_criar",
   "equipe_tecnicos",
   "equipe_tecnico_criar",
   "equipe_tecnico_status",
@@ -103,6 +105,7 @@ const READ_ACTIONS = new Set([
   "opcoes_formulario_os",
   "equipe_colaboradores",
   "equipe_colaborador_historico",
+  "equipe_acessos",
   "equipe_tecnicos",
   "minhas_os",
   "preventivas_resumo",
@@ -131,6 +134,7 @@ const GET_ACTIONS = new Set([
   // Leituras confirmadas de técnico/equipe
   "equipe_colaboradores",
   "equipe_colaborador_historico",
+  "equipe_acessos",
   "equipe_tecnicos",
   "minhas_os",
   // KPIs publicados via GET
