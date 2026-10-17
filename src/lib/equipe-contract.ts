@@ -2,6 +2,8 @@ export const EQUIPE_ACTIONS = [
   "equipe_colaboradores",
   "equipe_colaborador_historico",
   "equipe_colaborador_criar",
+  "equipe_acessos",
+  "equipe_acesso_criar",
   "equipe_tecnicos",
   "equipe_tecnico_criar",
 ] as const;
@@ -102,4 +104,35 @@ export interface CriarTecnicoPayload extends CriarColaboradorPayload {
   login: string;
   senha: string;
   id_colaborador?: string;
+}
+
+
+export type PerfilAcessoEquipe = "TECNICO" | "PCM" | "GESTAO" | "ADM";
+
+export interface EquipeAcessoResumo {
+  id_usuario: string;
+  nome: string;
+  login: string;
+  perfil: PerfilAcessoEquipe;
+  id_colaborador: string;
+  unidade: string;
+  ativo: string;
+  primeiro_acesso: string;
+  ultimo_login?: string;
+  credencial_tipo?: string;
+}
+
+export interface EquipeAcessosResponse {
+  success: boolean;
+  total: number;
+  acessos: EquipeAcessoResumo[];
+  versao: string;
+}
+
+export interface CriarAcessoPayload {
+  id_colaborador: string;
+  perfil: PerfilAcessoEquipe;
+  login: string;
+  senha: string;
+  unidade: string;
 }
