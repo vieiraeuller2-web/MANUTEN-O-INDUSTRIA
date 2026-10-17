@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Loader2, Plus, RefreshCw, Search, UserPlus, Users } from "lucide-react";
+import { KeyRound, Loader2, Plus, RefreshCw, Search, UserPlus, Users } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import CriarAcessoDialog from "@/components/equipe/CriarAcessoDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,11 +12,13 @@ import { toast } from "@/hooks/use-toast";
 import {
   useCriarEquipeColaborador,
   useCriarEquipeTecnico,
+  useEquipeAcessos,
   useEquipeColaboradores,
   useEquipeTecnicos,
 } from "@/hooks/use-equipe";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessModule } from "@/lib/authz";
+import type { EquipeColaborador } from "@/lib/equipe-contract";
 
 type FormBase = {
   nome: string;
@@ -38,6 +41,8 @@ export default function Equipe() {
   const [busca, setBusca] = useState("");
   const [dialogColaborador, setDialogColaborador] = useState(false);
   const [dialogTecnico, setDialogTecnico] = useState(false);
+  const [dialogAcesso, setDialogAcesso] = useState(false);
+  const [colaboradorAcesso, setColaboradorAcesso] = useState<EquipeColaborador | null>(null);
   const [formColaborador, setFormColaborador] = useState<FormBase>(formBaseInicial);
   const [formTecnico, setFormTecnico] = useState<FormBase & { login: string; senha: string }>({
     ...formBaseInicial,
@@ -46,16 +51,26 @@ export default function Equipe() {
   });
 
   const podeCriar = canAccessModule(user?.permissoes, "EQUIPE_COLABORADORES", "criar");
+  const podeCriarAcesso =
+    user?.perfil === "ADM" ||
+    (user?.perfil === "PCM" &&
+      canAccessModule(user?.permissoes, "EQUIPE_COLABORADORES", "executar"));
   const colaboradoresQuery = useEquipeColaboradores();
   const tecnicosQuery = useEquipeTecnicos();
+  const acessosQuery = useEquipeAcessos();
   const criarColaborador = useCriarEquipeColaborador();
   const criarTecnico = useCriarEquipeTecnico();
 
   const colaboradores = colaboradoresQuery.data?.colaboradores ?? [];
-  const tecnicos = tecnicosQuery.data?.tecnicos ?? [];
-  const tecnicosPorColaborador = useMemo(
-    () => new Map(tecnicos.map((t) => [t.id_colaborador, t])),
-    [tecnicos]
+  const acessos = acessosQuery.data?.acessos ?? [];
+  const acessosPorColaborador = useMemo(
+    () =>
+      new Map(
+        acessos
+          .filter((a) => a.id_colaborador)
+          .map((a) => [a.id_colaborador, a])
+      ),
+    [acessos]
   );
 
   const filtrados = useMemo(() => {
@@ -106,8 +121,14 @@ export default function Equipe() {
     }
   }
 
-  const carregando = colaboradoresQuery.isLoading || tecnicosQuery.isLoading;
-  const erro = colaboradoresQuery.error || tecnicosQuery.error;
+  const carregando =
+    colaboradoresQuery.isLoading ||
+    tecnicosQuery.isLoading ||
+    acessosQuery.isLoading;
+  const erro =
+    colaboradoresQuery.error ||
+    tecnicosQuery.error ||
+    acessosQuery.error;
 
   return (
     <div className="page-container max-w-5xl pb-24">
@@ -120,8 +141,13 @@ export default function Equipe() {
             onClick={() => {
               colaboradoresQuery.refetch();
               tecnicosQuery.refetch();
+              acessosQuery.refetch();
             }}
-            disabled={colaboradoresQuery.isFetching || tecnicosQuery.isFetching}
+            disabled={
+              colaboradoresQuery.isFetching ||
+              tecnicosQuery.isFetching ||
+              acessosQuery.isFetching
+            }
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Atualizar
@@ -173,7 +199,7 @@ export default function Equipe() {
           </p>
 
           {filtrados.map((c) => {
-            const tecnico = tecnicosPorColaborador.get(c.id_colaborador);
+            const acesso = acessosPorColaborador.get(c.id_colaborador);
             return (
               <Card key={c.id_colaborador}>
                 <CardContent className="p-4">
@@ -192,9 +218,9 @@ export default function Equipe() {
                       <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold">
                         {c.ativo === "SIM" ? "ATIVO" : "INATIVO"}
                       </span>
-                      {tecnico && (
+                      {acesso && (
                         <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
-                          TÉCNICO
+                          {acesso.perfil}
                         </span>
                       )}
                     </div>
@@ -211,9 +237,28 @@ export default function Equipe() {
                     </div>
                     <div>
                       <p className="text-muted-foreground">Acesso ao sistema</p>
-                      <p className="font-medium">
-                        {tecnico ? `${tecnico.login} • ${tecnico.ativo === "SIM" ? "ativo" : "inativo"}` : "Sem login técnico"}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">
+                          {acesso
+                            ? `${acesso.login} • ${acesso.perfil} • ${acesso.ativo === "SIM" ? "ativo" : "inativo"}`
+                            : "Sem acesso"}
+                        </p>
+                        {!acesso && podeCriarAcesso && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-[11px]"
+                            onClick={() => {
+                              setColaboradorAcesso(c);
+                              setDialogAcesso(true);
+                            }}
+                          >
+                            <KeyRound className="mr-1 h-3 w-3" />
+                            Criar acesso
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -221,6 +266,16 @@ export default function Equipe() {
             );
           })}
         </div>
+      )}
+
+      {user && (
+        <CriarAcessoDialog
+          colaborador={colaboradorAcesso}
+          open={dialogAcesso}
+          onOpenChange={setDialogAcesso}
+          perfilSolicitante={user.perfil}
+          unidadePadrao={user.unidade || "TH30"}
+        />
       )}
 
       <Dialog open={dialogColaborador} onOpenChange={setDialogColaborador}>
