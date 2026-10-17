@@ -5,6 +5,8 @@ import type {
   EquipeTecnicosResponse,
   CriarColaboradorPayload,
   CriarTecnicoPayload,
+  EquipeAcessosResponse,
+  CriarAcessoPayload,
 } from "@/lib/equipe-contract";
 
 export async function fetchEquipeColaboradores(): Promise<EquipeColaboradoresResponse> {
@@ -36,4 +38,15 @@ export async function criarEquipeTecnico(
   payload: CriarTecnicoPayload
 ): Promise<Record<string, unknown>> {
   return apiProxy("equipe_tecnico_criar", payload);
+}
+
+
+export async function fetchEquipeAcessos(): Promise<EquipeAcessosResponse> {
+  return apiProxy<EquipeAcessosResponse>("equipe_acessos");
+}
+
+export async function criarEquipeAcesso(
+  payload: CriarAcessoPayload
+): Promise<Record<string, unknown>> {
+  return apiProxy("equipe_acesso_criar", payload);
 }
