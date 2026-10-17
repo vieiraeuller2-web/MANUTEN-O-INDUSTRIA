@@ -4,6 +4,8 @@ export const EQUIPE_ACTIONS = [
   "equipe_colaborador_criar",
   "equipe_acessos",
   "equipe_acesso_criar",
+  "equipe_acesso_status",
+  "equipe_acesso_redefinir_senha",
   "equipe_tecnicos",
   "equipe_tecnico_criar",
 ] as const;
@@ -135,4 +137,15 @@ export interface CriarAcessoPayload {
   login: string;
   senha: string;
   unidade: string;
+}
+
+
+export interface AlterarStatusAcessoPayload {
+  id_usuario: string;
+  ativo: "SIM" | "NAO";
+}
+
+export interface RedefinirSenhaAcessoPayload {
+  id_usuario: string;
+  nova_senha: string;
 }
