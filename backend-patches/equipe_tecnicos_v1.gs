@@ -3,7 +3,9 @@
  *
  * Actions:
  * - equipe_tecnicos                  -> EQUIPE_COLABORADORES / VISUALIZAR
+ * - equipe_acessos                   -> EQUIPE_COLABORADORES / VISUALIZAR
  * - equipe_colaborador_criar         -> EQUIPE_COLABORADORES / CRIAR
+ * - equipe_acesso_criar              -> EQUIPE_COLABORADORES / EXECUTAR
  * - equipe_tecnico_criar            -> EQUIPE_COLABORADORES / CRIAR
  * - equipe_tecnico_status           -> EQUIPE_COLABORADORES / EDITAR
  * - equipe_tecnico_redefinir_senha  -> EQUIPE_COLABORADORES / EXECUTAR
@@ -229,6 +231,257 @@ function equipe_tecnicos(params) {
   };
 }
 
+
+
+function eqTecPerfilSolicitante_(ss, params) {
+  var loginSolicitante = eqTecTxt_(params && params.usuario);
+  if (!loginSolicitante) return "";
+
+  var shU = typeof F62_ABA_USUARIOS !== "undefined"
+    ? eqTecExigirAba_(ss, F62_ABA_USUARIOS)
+    : eqTecExigirAba_(ss, "USUARIOS");
+
+  var encontrados = eqTecLerObjetos_(shU).filter(function(u) {
+    return (
+      eqTecNorm_(u.LOGIN) === eqTecNorm_(loginSolicitante) &&
+      eqTecSimNao_(u.ATIVO) === "SIM"
+    );
+  });
+
+  if (encontrados.length !== 1) return "";
+  return eqTecTxt_(encontrados[0].PERFIL).toUpperCase();
+}
+
+function equipe_acessos(params) {
+  var gate = eqTecAutorizar_(params || {}, "VISUALIZAR");
+  if (!gate.ok) return gate.response;
+
+  var ss = eqTecSpreadsheet_();
+  var shU = typeof F62_ABA_USUARIOS !== "undefined"
+    ? eqTecExigirAba_(ss, F62_ABA_USUARIOS)
+    : eqTecExigirAba_(ss, "USUARIOS");
+
+  var usuarios = eqTecLerObjetos_(shU);
+
+  var acessos = usuarios.map(function(u) {
+    return {
+      id_usuario: eqTecTxt_(u.ID_USUARIO),
+      nome: eqTecTxt_(u.NOME),
+      login: eqTecTxt_(u.LOGIN),
+      perfil: eqTecTxt_(u.PERFIL).toUpperCase(),
+      id_colaborador: eqTecTxt_(u.ID_COLABORADOR),
+      unidade: eqTecTxt_(u.UNIDADE),
+      ativo: eqTecTxt_(u.ATIVO),
+      primeiro_acesso: eqTecTxt_(u.PRIMEIRO_ACESSO),
+      ultimo_login: eqTecTxt_(u.ULTIMO_LOGIN),
+      credencial_tipo: eqTecTxt_(u.CREDENCIAL_TIPO)
+    };
+  });
+
+  return {
+    success: true,
+    total: acessos.length,
+    acessos: acessos,
+    versao: "EQUIPE_ACESSOS_V1"
+  };
+}
+
+function equipe_acesso_criar(params) {
+  params = params || {};
+  var gate = eqTecAutorizar_(params, "EXECUTAR");
+  if (!gate.ok) return gate.response;
+
+  var idColaborador = eqTecTxt_(params.id_colaborador);
+  var perfilAlvo = eqTecTxt_(params.perfil).toUpperCase();
+  var login = eqTecTxt_(params.login);
+  var senha = String(
+    params.senha === undefined || params.senha === null ? "" : params.senha
+  );
+  var unidadeInformada = eqTecTxt_(params.unidade);
+
+  var perfisPermitidos = ["TECNICO", "PCM", "GESTAO", "ADM"];
+
+  if (!idColaborador || !perfilAlvo || !login || !senha) {
+    return {
+      success: false,
+      code: "CAMPOS_OBRIGATORIOS",
+      message: "Colaborador, perfil, login e senha são obrigatórios."
+    };
+  }
+
+  if (perfisPermitidos.indexOf(perfilAlvo) === -1) {
+    return {
+      success: false,
+      code: "PERFIL_INVALIDO",
+      message: "Perfil de acesso inválido."
+    };
+  }
+
+  if (senha.length < 8) {
+    return {
+      success: false,
+      code: "SENHA_CURTA",
+      message: "A senha inicial deve possuir ao menos 8 caracteres."
+    };
+  }
+
+  if (typeof f62HashSenha_ !== "function") {
+    return {
+      success: false,
+      code: "HELPER_HASH_AUSENTE",
+      message: "Helper oficial de credencial f62HashSenha_ não está disponível."
+    };
+  }
+
+  var pepper = PropertiesService
+    .getScriptProperties()
+    .getProperty(F62_PEPPER_PROPERTY);
+
+  if (!pepper) {
+    return {
+      success: false,
+      code: "PEPPER_AUSENTE",
+      message: "Configuração de credencial indisponível."
+    };
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    var ss = eqTecSpreadsheet_();
+    var perfilSolicitante = eqTecPerfilSolicitante_(ss, params);
+
+    if (perfilSolicitante !== "ADM") {
+      if (!(perfilSolicitante === "PCM" && perfilAlvo === "TECNICO")) {
+        return {
+          success: false,
+          code: "CRIACAO_ACESSO_NAO_AUTORIZADA",
+          message: "Seu perfil não pode criar esse nível de acesso."
+        };
+      }
+    }
+
+    var shU = typeof F62_ABA_USUARIOS !== "undefined"
+      ? eqTecExigirAba_(ss, F62_ABA_USUARIOS)
+      : eqTecExigirAba_(ss, "USUARIOS");
+    var shC = eqTecExigirAba_(ss, EQTEC_ABA_COLABORADORES);
+
+    var colaboradores = eqTecLerObjetos_(shC);
+    var encontradosCol = colaboradores.filter(function(c) {
+      return eqTecTxt_(c.ID_COLABORADOR) === idColaborador;
+    });
+
+    if (encontradosCol.length !== 1) {
+      return {
+        success: false,
+        code: "COLABORADOR_INVALIDO",
+        message: "Colaborador não encontrado de forma única."
+      };
+    }
+
+    var colaborador = encontradosCol[0];
+
+    if (eqTecSimNao_(colaborador.ATIVO) !== "SIM") {
+      return {
+        success: false,
+        code: "COLABORADOR_INATIVO",
+        message: "Não é possível criar acesso para colaborador inativo."
+      };
+    }
+
+    var usuarios = eqTecLerObjetos_(shU);
+
+    if (usuarios.some(function(u) {
+      return eqTecNorm_(u.LOGIN) === eqTecNorm_(login);
+    })) {
+      return {
+        success: false,
+        code: "LOGIN_DUPLICADO",
+        message: "Já existe um usuário com esse login."
+      };
+    }
+
+    if (usuarios.some(function(u) {
+      return eqTecTxt_(u.ID_COLABORADOR) === idColaborador;
+    })) {
+      return {
+        success: false,
+        code: "COLABORADOR_JA_TEM_USUARIO",
+        message: "Esse colaborador já possui usuário de acesso."
+      };
+    }
+
+    var idsUsuario = {};
+    usuarios.forEach(function(u) {
+      idsUsuario[eqTecTxt_(u.ID_USUARIO)] = true;
+    });
+
+    var unidade = perfilAlvo === "TECNICO"
+      ? EQTEC_UNIDADE_PADRAO
+      : unidadeInformada;
+
+    if (!unidade) {
+      return {
+        success: false,
+        code: "UNIDADE_OBRIGATORIA",
+        message: "Informe a unidade para este perfil."
+      };
+    }
+
+    var idUsuario = eqTecGerarId_("USR-", idsUsuario);
+    var salt = eqTecGerarSalt_();
+    var hash = f62HashSenha_(senha, salt, pepper);
+    var agora = new Date();
+    var nome = eqTecTxt_(
+      colaborador.NOME_EXIBICAO ||
+      colaborador.NOME_BD_EXATO
+    );
+
+    eqTecAppendPorCabecalho_(shU, {
+      ID_USUARIO: idUsuario,
+      NOME: nome,
+      LOGIN: login,
+      SENHA_HASH: hash,
+      SENHA_SALT: salt,
+      PERFIL: perfilAlvo,
+      ID_COLABORADOR: idColaborador,
+      UNIDADE: unidade,
+      ATIVO: "SIM",
+      PRIMEIRO_ACESSO: "SIM",
+      DATA_CADASTRO: agora,
+      DATA_ATUALIZACAO: agora,
+      ULTIMO_LOGIN: "",
+      OBSERVACAO: "Acesso criado via equipe_acesso_criar.",
+      CREDENCIAL_TIPO: EQTEC_CREDENCIAL_TIPO
+    });
+
+    return {
+      success: true,
+      code: "ACESSO_CRIADO",
+      acesso: {
+        id_usuario: idUsuario,
+        nome: nome,
+        login: login,
+        perfil: perfilAlvo,
+        id_colaborador: idColaborador,
+        unidade: unidade,
+        ativo: "SIM",
+        primeiro_acesso: "SIM"
+      },
+      versao: "EQUIPE_ACESSOS_V1"
+    };
+  } catch (error) {
+    console.error("[equipe_acesso_criar]", error);
+    return {
+      success: false,
+      code: "ERRO_INTERNO",
+      message: "Não foi possível criar o acesso."
+    };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
 
 function equipe_colaborador_criar(params) {
   params = params || {};
