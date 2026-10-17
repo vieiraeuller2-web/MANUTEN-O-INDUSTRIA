@@ -53,13 +53,38 @@ export default async function handler(
       });
     }
 
-    // Extrai dados da resposta do GAS
+    // Extrai dados da resposta oficial do AUTH62.
+    // auth62Login_ retorna os dados do usuário dentro de `usuario`,
+    // mas mantemos fallback para formato plano por compatibilidade.
+    const gasUsuario =
+      gasResponse.usuario && typeof gasResponse.usuario === "object"
+        ? (gasResponse.usuario as Record<string, unknown>)
+        : {};
+
     const token = String(gasResponse.token || gasResponse.session_token || "");
-    const perfil = String(gasResponse.perfil || "TECNICO") as SessionPayload["perfil"];
-    const nome = String(gasResponse.nome || gasResponse.name || "");
-    const userLogin = String(gasResponse.login || login);
-    const unidade = String(gasResponse.unidade || gasResponse.unit || "");
+    const perfilRaw = String(
+      gasUsuario.perfil || gasResponse.perfil || ""
+    ).trim().toUpperCase();
+    const nome = String(
+      gasUsuario.nome || gasResponse.nome || gasResponse.name || ""
+    );
+    const userLogin = String(
+      gasUsuario.login || gasResponse.login || login
+    );
+    const unidade = String(
+      gasUsuario.unidade || gasResponse.unidade || gasResponse.unit || ""
+    );
     const permissoes = (gasResponse.permissoes || []) as SessionPayload["permissoes"];
+
+    if (!["ADM", "PCM", "GESTAO", "TECNICO"].includes(perfilRaw)) {
+      console.error("[auth/login] Perfil AUTH62 ausente ou inválido");
+      return res.status(500).json({
+        success: false,
+        message: "Perfil de autenticação inválido",
+      });
+    }
+
+    const perfil = perfilRaw as SessionPayload["perfil"];
 
     if (!token) {
       console.error("[auth/login] GAS não retornou token");
