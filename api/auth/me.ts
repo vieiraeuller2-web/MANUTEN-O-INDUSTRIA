@@ -46,13 +46,19 @@ export default async function handler(
       return res.status(401).json({ authenticated: false });
     }
 
-    // Retorna dados atualizados (backend é a fonte de verdade)
+    // Retorna dados atualizados (backend é a fonte de verdade).
+    // Suporta o contrato AUTH62 com `usuario` aninhado e o formato plano legado.
+    const gasUsuario =
+      gasResponse.usuario && typeof gasResponse.usuario === "object"
+        ? (gasResponse.usuario as Record<string, unknown>)
+        : {};
+
     return res.status(200).json({
       authenticated: true,
-      perfil: gasResponse.perfil || session.perfil,
-      nome: gasResponse.nome || session.nome,
-      login: gasResponse.login || session.login,
-      unidade: gasResponse.unidade || session.unidade,
+      perfil: gasUsuario.perfil || gasResponse.perfil || session.perfil,
+      nome: gasUsuario.nome || gasResponse.nome || session.nome,
+      login: gasUsuario.login || gasResponse.login || session.login,
+      unidade: gasUsuario.unidade || gasResponse.unidade || session.unidade,
       permissoes: gasResponse.permissoes || session.permissoes || [],
     });
   } catch (err) {
