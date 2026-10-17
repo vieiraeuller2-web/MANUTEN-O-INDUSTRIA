@@ -34,6 +34,8 @@ describe("ALLOWED_ACTIONS técnico/equipe", () => {
     expect(ALLOWED_ACTIONS.has("equipe_colaboradores")).toBe(true);
     expect(ALLOWED_ACTIONS.has("equipe_colaborador_historico")).toBe(true);
     expect(ALLOWED_ACTIONS.has("equipe_colaborador_criar")).toBe(true);
+    expect(ALLOWED_ACTIONS.has("equipe_acessos")).toBe(true);
+    expect(ALLOWED_ACTIONS.has("equipe_acesso_criar")).toBe(true);
     expect(ALLOWED_ACTIONS.has("equipe_tecnicos")).toBe(true);
     expect(ALLOWED_ACTIONS.has("equipe_tecnico_criar")).toBe(true);
     expect(ALLOWED_ACTIONS.has("equipe_tecnico_status")).toBe(true);
@@ -44,6 +46,8 @@ describe("ALLOWED_ACTIONS técnico/equipe", () => {
 
   it("mantém escritas administrativas de técnico como POST", () => {
     expect(resolveGASMethodForAction("equipe_colaborador_criar")).toBe("POST");
+    expect(resolveGASMethodForAction("equipe_acessos")).toBe("GET");
+    expect(resolveGASMethodForAction("equipe_acesso_criar")).toBe("POST");
     expect(resolveGASMethodForAction("equipe_tecnico_criar")).toBe("POST");
     expect(resolveGASMethodForAction("equipe_tecnico_status")).toBe("POST");
     expect(resolveGASMethodForAction("equipe_tecnico_redefinir_senha")).toBe("POST");
