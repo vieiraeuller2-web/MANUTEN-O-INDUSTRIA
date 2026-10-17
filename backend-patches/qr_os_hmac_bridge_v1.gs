@@ -151,7 +151,7 @@ function qrHUpsertPiloto_(usuarioAuth, senha) {
   var loginNorm = login.toLowerCase();
   var id = String(usuarioAuth.id_usuario || "").trim();
   var nome = String(usuarioAuth.nome || "").trim();
-  var hashQr = String(qrOsHash_(String(senha))).toLowerCase();
+  var hashQr = "AUTH62_ONLY";
 
   var row = 0;
   var lastRow = sh.getLastRow();
@@ -326,23 +326,14 @@ function qrOsLoginApi_(entrada) {
             usuario,
             ["ATIVO"]
           )
-        ) !== "sim" ||
-        !qrOsEqSeguro_(
-          qrOsHash_(senha),
-          String(
-            qrOsGet_(
-              usuario,
-              ["SENHA_HASH"]
-            ) || ""
-          ).toLowerCase()
-        )
+        ) !== "sim"
       ) {
         qrOsRateFalha_(login);
 
         return qrOsJson_({
           success: false,
           message:
-            "Usuário ou senha inválidos."
+            "Usuário técnico não disponível para o fluxo QR."
         });
       }
     }
