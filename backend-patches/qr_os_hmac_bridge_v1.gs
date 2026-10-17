@@ -24,8 +24,7 @@ function qrHValidarTecnicoAuth62_(login, senha) {
   try {
     if (
       typeof f62HashSenha_ !== "function" ||
-      typeof f62SafeEqual_ !== "function" ||
-      typeof f62LerObjetos_ !== "function"
+      typeof qrOsEqSeguro_ !== "function"
     ) {
       return { ok: false, code: "AUTH62_HELPER_AUSENTE" };
     }
@@ -37,41 +36,99 @@ function qrHValidarTecnicoAuth62_(login, senha) {
       return { ok: false, code: "USUARIOS_AUSENTE" };
     }
 
-    var alvo = String(login || "").trim().toLowerCase();
+    var map = qrHMapaCabecalhos_(shU);
+    var obrigatorias = [
+      "ID_USUARIO",
+      "NOME",
+      "LOGIN",
+      "SENHA_HASH",
+      "SENHA_SALT",
+      "PERFIL",
+      "ID_COLABORADOR",
+      "ATIVO",
+      "CREDENCIAL_TIPO"
+    ];
 
-    var encontrados = f62LerObjetos_(shU).filter(function(u) {
-      return String(u.LOGIN || "").trim().toLowerCase() === alvo;
+    for (var j = 0; j < obrigatorias.length; j++) {
+      if (!map[obrigatorias[j]]) {
+        return { ok: false, code: "USUARIOS_SCHEMA_INVALIDO" };
+      }
+    }
+
+    var alvo = String(login || "").trim().toLowerCase();
+    var lastRow = shU.getLastRow();
+
+    if (lastRow < 2) {
+      return { ok: false, code: "LOGIN_INVALIDO" };
+    }
+
+    var values = shU
+      .getRange(2, 1, lastRow - 1, shU.getLastColumn())
+      .getDisplayValues();
+
+    var encontrados = values.filter(function(row) {
+      return (
+        String(row[map.LOGIN - 1] || "")
+          .trim()
+          .toLowerCase() === alvo
+      );
     });
 
     if (encontrados.length !== 1) {
       return { ok: false, code: "LOGIN_INVALIDO" };
     }
 
-    var u = encontrados[0];
+    var row = encontrados[0];
+
+    var perfil = String(
+      row[map.PERFIL - 1] || ""
+    ).trim().toUpperCase();
+
+    var ativo = String(
+      row[map.ATIVO - 1] || ""
+    ).trim();
 
     if (
-      String(u.PERFIL || "").trim().toUpperCase() !== "TECNICO" ||
-      !qrHSim_(u.ATIVO)
+      perfil !== "TECNICO" ||
+      !qrHSim_(ativo)
     ) {
-      return { ok: false, code: "TECNICO_INATIVO_OU_PERFIL_INVALIDO" };
+      return {
+        ok: false,
+        code: "TECNICO_INATIVO_OU_PERFIL_INVALIDO"
+      };
     }
 
+    var credencialTipo = String(
+      row[map.CREDENCIAL_TIPO - 1] || ""
+    ).trim().toUpperCase();
+
     if (
-      String(u.CREDENCIAL_TIPO || "").trim().toUpperCase() !==
+      credencialTipo !==
       "HMAC_SHA256_PEPPER_V1"
     ) {
-      return { ok: false, code: "CREDENCIAL_NAO_HMAC" };
+      return {
+        ok: false,
+        code: "CREDENCIAL_NAO_HMAC"
+      };
     }
 
-    var hashEsperado = String(u.SENHA_HASH || "").trim();
-    var salt = String(u.SENHA_SALT || "").trim();
+    var hashEsperado = String(
+      row[map.SENHA_HASH - 1] || ""
+    ).trim();
+
+    var salt = String(
+      row[map.SENHA_SALT - 1] || ""
+    ).trim();
 
     var pepper = PropertiesService
       .getScriptProperties()
       .getProperty(F62_PEPPER_PROPERTY);
 
     if (!hashEsperado || !salt || !pepper) {
-      return { ok: false, code: "CREDENCIAL_INCOMPLETA" };
+      return {
+        ok: false,
+        code: "CREDENCIAL_INCOMPLETA"
+      };
     }
 
     var hashInformado = f62HashSenha_(
@@ -80,17 +137,30 @@ function qrHValidarTecnicoAuth62_(login, senha) {
       pepper
     );
 
-    if (!f62SafeEqual_(hashEsperado, hashInformado)) {
+    if (
+      !qrOsEqSeguro_(
+        String(hashInformado).toLowerCase(),
+        String(hashEsperado).toLowerCase()
+      )
+    ) {
       return { ok: false, code: "LOGIN_INVALIDO" };
     }
 
     return {
       ok: true,
       usuario: {
-        id_usuario: String(u.ID_USUARIO || "").trim(),
-        nome: String(u.NOME || "").trim(),
-        login: String(u.LOGIN || "").trim(),
-        id_colaborador: String(u.ID_COLABORADOR || "").trim()
+        id_usuario: String(
+          row[map.ID_USUARIO - 1] || ""
+        ).trim(),
+        nome: String(
+          row[map.NOME - 1] || ""
+        ).trim(),
+        login: String(
+          row[map.LOGIN - 1] || ""
+        ).trim(),
+        id_colaborador: String(
+          row[map.ID_COLABORADOR - 1] || ""
+        ).trim()
       }
     };
 
@@ -115,11 +185,7 @@ function qrHMapaCabecalhos_(sh) {
   return map;
 }
 
-function qrHUpsertPiloto_(usuarioAuth, senha) {
-  if (typeof qrOsHash_ !== "function") {
-    throw new Error("qrOsHash_ não disponível.");
-  }
-
+function qrHUpsertPiloto_(usuarioAuth) {
   var ss = SpreadsheetApp.openById(F62_SPREADSHEET_ID);
   var sh = ss.getSheetByName(QRH_ABA_PILOTO);
 
@@ -296,8 +362,7 @@ function qrOsLoginApi_(entrada) {
       // Autenticação HMAC válida:
       // cria/atualiza a compatibilidade QR com o mesmo login/senha.
       qrHUpsertPiloto_(
-        auth62.usuario,
-        senha
+        auth62.usuario
       );
 
       // Recarrega o contexto para que TODO o restante do fluxo QR
