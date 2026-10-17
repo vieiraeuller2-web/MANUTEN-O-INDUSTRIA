@@ -55,6 +55,8 @@ export const ALLOWED_ACTIONS = new Set([
   "equipe_colaborador_criar",
   "equipe_acessos",
   "equipe_acesso_criar",
+  "equipe_acesso_status",
+  "equipe_acesso_redefinir_senha",
   "equipe_tecnicos",
   "equipe_tecnico_criar",
   "equipe_tecnico_status",
