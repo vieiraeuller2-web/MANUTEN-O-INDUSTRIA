@@ -6,6 +6,8 @@
  * - equipe_acessos                   -> EQUIPE_COLABORADORES / VISUALIZAR
  * - equipe_colaborador_criar         -> EQUIPE_COLABORADORES / CRIAR
  * - equipe_acesso_criar              -> EQUIPE_COLABORADORES / EXECUTAR
+ * - equipe_acesso_status             -> EQUIPE_COLABORADORES / EDITAR
+ * - equipe_acesso_redefinir_senha    -> EQUIPE_COLABORADORES / EXECUTAR
  * - equipe_tecnico_criar            -> EQUIPE_COLABORADORES / CRIAR
  * - equipe_tecnico_status           -> EQUIPE_COLABORADORES / EDITAR
  * - equipe_tecnico_redefinir_senha  -> EQUIPE_COLABORADORES / EXECUTAR
@@ -477,6 +479,284 @@ function equipe_acesso_criar(params) {
       success: false,
       code: "ERRO_INTERNO",
       message: "Não foi possível criar o acesso."
+    };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+
+function eqTecPodeAdministrarPerfil_(perfilSolicitante, perfilAlvo) {
+  perfilSolicitante = eqTecTxt_(perfilSolicitante).toUpperCase();
+  perfilAlvo = eqTecTxt_(perfilAlvo).toUpperCase();
+
+  if (perfilSolicitante === "ADM") return true;
+  if (perfilSolicitante === "PCM" && perfilAlvo === "TECNICO") return true;
+  return false;
+}
+
+function equipe_acesso_status(params) {
+  params = params || {};
+  var gate = eqTecAutorizar_(params, "EDITAR");
+  if (!gate.ok) return gate.response;
+
+  var ativo = eqTecSimNao_(params.ativo);
+  if (ativo !== "SIM" && ativo !== "NAO") {
+    return {
+      success: false,
+      code: "STATUS_INVALIDO",
+      message: "ativo deve ser SIM ou NAO."
+    };
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    var ss = eqTecSpreadsheet_();
+    var shU = typeof F62_ABA_USUARIOS !== "undefined"
+      ? eqTecExigirAba_(ss, F62_ABA_USUARIOS)
+      : eqTecExigirAba_(ss, "USUARIOS");
+
+    var usuarios = eqTecLerObjetos_(shU);
+    var alvo = eqTecEncontrarUsuario_(usuarios, params.id_usuario, params.login);
+
+    if (!alvo) {
+      return {
+        success: false,
+        code: "ACESSO_NAO_ENCONTRADO",
+        message: "Usuário de acesso não encontrado."
+      };
+    }
+
+    var perfilAlvo = eqTecTxt_(alvo.PERFIL).toUpperCase();
+    var perfilSolicitante = eqTecPerfilSolicitante_(ss, params);
+
+    if (!eqTecPodeAdministrarPerfil_(perfilSolicitante, perfilAlvo)) {
+      return {
+        success: false,
+        code: "ALTERACAO_ACESSO_NAO_AUTORIZADA",
+        message: "Seu perfil não pode alterar esse acesso."
+      };
+    }
+
+    var loginSolicitante = eqTecTxt_(params.usuario);
+    if (
+      ativo === "NAO" &&
+      eqTecNorm_(alvo.LOGIN) === eqTecNorm_(loginSolicitante)
+    ) {
+      return {
+        success: false,
+        code: "AUTO_DESATIVACAO_BLOQUEADA",
+        message: "Não é permitido desativar o próprio acesso."
+      };
+    }
+
+    var row = alvo.__row;
+    if (!row) {
+      var idAlvo = eqTecTxt_(alvo.ID_USUARIO);
+      var meta = eqTecMapaCabecalhos_(shU);
+      var qtd = Math.max(0, shU.getLastRow() - 1);
+      var ids = qtd > 0
+        ? shU.getRange(2, meta.map.ID_USUARIO, qtd, 1).getDisplayValues()
+        : [];
+      for (var i = 0; i < ids.length; i++) {
+        if (eqTecTxt_(ids[i][0]) === idAlvo) {
+          row = i + 2;
+          break;
+        }
+      }
+    }
+
+    if (!row) throw new Error("Linha do usuário não localizada.");
+
+    eqTecAtualizarCampos_(shU, row, {
+      ATIVO: ativo,
+      DATA_ATUALIZACAO: new Date()
+    });
+
+    return {
+      success: true,
+      code: ativo === "SIM" ? "ACESSO_ATIVADO" : "ACESSO_DESATIVADO",
+      acesso: {
+        id_usuario: eqTecTxt_(alvo.ID_USUARIO),
+        login: eqTecTxt_(alvo.LOGIN),
+        perfil: perfilAlvo,
+        ativo: ativo
+      },
+      versao: "EQUIPE_ACESSOS_V1"
+    };
+  } catch (error) {
+    console.error("[equipe_acesso_status]", error);
+    return {
+      success: false,
+      code: "ERRO_INTERNO",
+      message: "Não foi possível alterar o status do acesso."
+    };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+function equipe_acesso_redefinir_senha(params) {
+  params = params || {};
+  var gate = eqTecAutorizar_(params, "EXECUTAR");
+  if (!gate.ok) return gate.response;
+
+  var novaSenha = String(
+    params.nova_senha === undefined || params.nova_senha === null
+      ? ""
+      : params.nova_senha
+  );
+
+  if (novaSenha.length < 8) {
+    return {
+      success: false,
+      code: "SENHA_CURTA",
+      message: "A nova senha deve possuir ao menos 8 caracteres."
+    };
+  }
+
+  if (typeof f62HashSenha_ !== "function") {
+    return {
+      success: false,
+      code: "HELPER_HASH_AUSENTE",
+      message: "Helper oficial de credencial f62HashSenha_ não está disponível."
+    };
+  }
+
+  var pepper = PropertiesService
+    .getScriptProperties()
+    .getProperty(F62_PEPPER_PROPERTY);
+
+  if (!pepper) {
+    return {
+      success: false,
+      code: "PEPPER_AUSENTE",
+      message: "Configuração de credencial indisponível."
+    };
+  }
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    var ss = eqTecSpreadsheet_();
+    var shU = typeof F62_ABA_USUARIOS !== "undefined"
+      ? eqTecExigirAba_(ss, F62_ABA_USUARIOS)
+      : eqTecExigirAba_(ss, "USUARIOS");
+
+    var usuarios = eqTecLerObjetos_(shU);
+    var alvo = eqTecEncontrarUsuario_(usuarios, params.id_usuario, params.login);
+
+    if (!alvo) {
+      return {
+        success: false,
+        code: "ACESSO_NAO_ENCONTRADO",
+        message: "Usuário de acesso não encontrado."
+      };
+    }
+
+    var perfilAlvo = eqTecTxt_(alvo.PERFIL).toUpperCase();
+    var perfilSolicitante = eqTecPerfilSolicitante_(ss, params);
+
+    if (!eqTecPodeAdministrarPerfil_(perfilSolicitante, perfilAlvo)) {
+      return {
+        success: false,
+        code: "REDEFINICAO_ACESSO_NAO_AUTORIZADA",
+        message: "Seu perfil não pode redefinir a senha desse acesso."
+      };
+    }
+
+    var tipoAtual = eqTecTxt_(alvo.CREDENCIAL_TIPO).toUpperCase();
+    if (
+      tipoAtual &&
+      tipoAtual !== EQTEC_CREDENCIAL_TIPO &&
+      tipoAtual !== "LEGACY_QR_HASH"
+    ) {
+      return {
+        success: false,
+        code: "CREDENCIAL_NAO_SUPORTADA",
+        message: "O tipo atual de credencial não permite redefinição por esta tela."
+      };
+    }
+
+    var row = alvo.__row;
+    if (!row) {
+      var idAlvo = eqTecTxt_(alvo.ID_USUARIO);
+      var meta = eqTecMapaCabecalhos_(shU);
+      var qtd = Math.max(0, shU.getLastRow() - 1);
+      var ids = qtd > 0
+        ? shU.getRange(2, meta.map.ID_USUARIO, qtd, 1).getDisplayValues()
+        : [];
+      for (var i = 0; i < ids.length; i++) {
+        if (eqTecTxt_(ids[i][0]) === idAlvo) {
+          row = i + 2;
+          break;
+        }
+      }
+    }
+
+    if (!row) throw new Error("Linha do usuário não localizada.");
+
+    var salt = eqTecGerarSalt_();
+    var hash = f62HashSenha_(novaSenha, salt, pepper);
+
+    eqTecAtualizarCampos_(shU, row, {
+      SENHA_HASH: hash,
+      SENHA_SALT: salt,
+      CREDENCIAL_TIPO: EQTEC_CREDENCIAL_TIPO,
+      PRIMEIRO_ACESSO: "SIM",
+      DATA_ATUALIZACAO: new Date()
+    });
+
+    // Se era técnico legado já conhecido pelo QR, força a ponte AUTH62
+    // no próximo login QR para que a senha antiga não continue válida.
+    if (perfilAlvo === "TECNICO") {
+      try {
+        var shQr = ss.getSheetByName("QR_OS_USUARIOS_PILOTO");
+        if (shQr) {
+          var metaQr = eqTecMapaCabecalhos_(shQr);
+          if (metaQr.map.LOGIN && metaQr.map.SENHA_HASH) {
+            var qtdQr = Math.max(0, shQr.getLastRow() - 1);
+            var valoresQr = qtdQr > 0
+              ? shQr.getRange(2, 1, qtdQr, shQr.getLastColumn()).getDisplayValues()
+              : [];
+            for (var q = 0; q < valoresQr.length; q++) {
+              if (
+                eqTecNorm_(valoresQr[q][metaQr.map.LOGIN - 1]) ===
+                eqTecNorm_(alvo.LOGIN)
+              ) {
+                shQr
+                  .getRange(q + 2, metaQr.map.SENHA_HASH)
+                  .setValue("AUTH62_ONLY");
+                break;
+              }
+            }
+          }
+        }
+      } catch (qrError) {
+        console.error("[equipe_acesso_redefinir_senha] Ponte QR:", qrError);
+      }
+    }
+
+    return {
+      success: true,
+      code: "SENHA_REDEFINIDA",
+      acesso: {
+        id_usuario: eqTecTxt_(alvo.ID_USUARIO),
+        login: eqTecTxt_(alvo.LOGIN),
+        perfil: perfilAlvo,
+        primeiro_acesso: "SIM"
+      },
+      versao: "EQUIPE_ACESSOS_V1"
+    };
+  } catch (error) {
+    console.error("[equipe_acesso_redefinir_senha]", error);
+    return {
+      success: false,
+      code: "ERRO_INTERNO",
+      message: "Não foi possível redefinir a senha."
     };
   } finally {
     try { lock.releaseLock(); } catch (e) {}
