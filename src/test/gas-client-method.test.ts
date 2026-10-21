@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ALLOWED_ACTIONS,
   resolveGASMethodForAction,
+  setSessionCookie,
 } from "../../api/_shared/gas-client";
 
 describe("resolveGASMethodForAction", () => {
@@ -51,5 +52,14 @@ describe("ALLOWED_ACTIONS técnico/equipe", () => {
     expect(resolveGASMethodForAction("equipe_tecnico_criar")).toBe("POST");
     expect(resolveGASMethodForAction("equipe_tecnico_status")).toBe("POST");
     expect(resolveGASMethodForAction("equipe_tecnico_redefinir_senha")).toBe("POST");
+  });
+
+  it("mantém fora da whitelist as actions genéricas de acesso ainda não homologadas", () => {
+    expect(ALLOWED_ACTIONS.has("equipe_acesso_status")).toBe(false);
+    expect(ALLOWED_ACTIONS.has("equipe_acesso_redefinir_senha")).toBe(false);
+  });
+
+  it("alinha o cookie Vercel ao TTL de 12h do AUTH62", () => {
+    expect(setSessionCookie("teste")).toContain("Max-Age=43200");
   });
 });
