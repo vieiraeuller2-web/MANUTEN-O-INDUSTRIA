@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Loader2, Wrench } from "lucide-react";
+import { Eye, EyeOff, Loader2, ShieldCheck, Activity, ScanLine, ArrowRight, Wrench } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessRoute } from "@/lib/authz";
 import type { AuthUser } from "@/lib/api-client";
+import "./Login.css";
 
 /**
  * Página de login real usando autenticação do Apps Script.
@@ -64,78 +65,100 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-4 stat-card"
-      >
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
-            <Wrench className="w-6 h-6 text-primary" />
-          </div>
-          <h1 className="text-xl font-bold">Controle de Manutenção</h1>
-          <p className="text-xs text-muted-foreground">
-            Acesso restrito — Sistema de Manutenção Industrial
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="login-field">Login</Label>
-          <Input
-            id="login-field"
-            type="text"
-            value={userLogin}
-            onChange={(e) => setUserLogin(e.target.value)}
-            required
-            autoComplete="username"
-            autoFocus
-            placeholder="Seu login"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="senha-field">Senha</Label>
-          <div className="relative">
-            <Input
-              id="senha-field"
-              type={mostrarSenha ? "text" : "password"}
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              required
-              minLength={4}
-              autoComplete="current-password"
-              placeholder="Sua senha"
-              className="pr-11"
-            />
-            <button
-              type="button"
-              onClick={() => setMostrarSenha((value) => !value)}
-              className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-              aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
-              title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
-            >
-              {mostrarSenha ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={loading || status === "loading"}
+    <main className="kron-login">
+      <div className="kron-login__media" aria-hidden="true">
+        <video
+          className="kron-login__video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster="/kron-login-poster.svg"
         >
-          {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          Entrar
-        </Button>
+          <source src="/kron-maintenance.mp4" type="video/mp4" />
+        </video>
+        <div className="kron-login__grid" />
+        <div className="kron-login__scan" />
+      </div>
 
-        <p className="text-[10px] text-center text-muted-foreground/60">
-          Em caso de problemas de acesso, contate o administrador do sistema.
-        </p>
-      </form>
-    </div>
+      <div className="kron-login__layout">
+        <section className="kron-login__hero" aria-label="Apresentação do KRON">
+          <div className="kron-login__eyebrow"><span className="kron-login__pulse" /> PLATAFORMA INDUSTRIAL</div>
+          <div className="kron-login__brand">
+            <div className="kron-login__mark"><Wrench size={35} strokeWidth={1.7} /></div>
+            <span>KRON<span className="kron-login__brand-dot">.</span></span>
+          </div>
+          <h1>Centro de Controle<br />da Manutenção<span className="kron-login__brand-dot">.</span></h1>
+          <p>Operação industrial sob controle. Um ambiente para acompanhar, executar e evoluir sua manutenção.</p>
+          <div className="kron-login__hero-bottom">
+            <span><Activity size={17} /> CONTROLE OPERACIONAL</span>
+            <span><ScanLine size={17} /> RASTREABILIDADE</span>
+          </div>
+        </section>
+
+        <section className="kron-login__access" aria-label="Acesso ao sistema">
+          <form onSubmit={handleSubmit} className="kron-login__panel">
+            <div className="kron-login__panel-top">
+              <span className="kron-login__panel-icon"><ShieldCheck size={22} /></span>
+              <span className="kron-login__secure">AMBIENTE RESTRITO</span>
+            </div>
+            <p className="kron-login__section-tag">IDENTIFICAÇÃO</p>
+            <h2>Bem-vindo ao KRON</h2>
+            <p className="kron-login__muted">Entre com suas credenciais para acessar a central.</p>
+
+            <div className="kron-login__field">
+              <Label htmlFor="login-field">Login</Label>
+              <Input
+                id="login-field"
+                type="text"
+                value={userLogin}
+                onChange={(e) => setUserLogin(e.target.value)}
+                required
+                autoComplete="username"
+                autoFocus
+                placeholder="Seu login"
+              />
+            </div>
+
+            <div className="kron-login__field">
+              <Label htmlFor="senha-field">Senha</Label>
+              <div className="relative">
+                <Input
+                  id="senha-field"
+                  type={mostrarSenha ? "text" : "password"}
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  required
+                  minLength={4}
+                  autoComplete="current-password"
+                  placeholder="Sua senha"
+                  className="pr-11"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha((value) => !value)}
+                  className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-slate-400 transition-colors hover:text-white"
+                  aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <Button type="submit" className="kron-login__submit" disabled={loading || status === "loading"}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+              {loading ? "Autenticando..." : "Acessar central"}
+            </Button>
+
+            <div className="kron-login__panel-footer">
+              <ShieldCheck size={15} />
+              Acesso protegido. Em caso de dificuldade, contate o administrador.
+            </div>
+          </form>
+          <div className="kron-login__access-signature">KRON / CENTRO DE CONTROLE DA MANUTENÇÃO</div>
+        </section>
+      </div>
+    </main>
   );
 }
