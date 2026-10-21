@@ -1,8 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   ALLOWED_ACTIONS,
   resolveGASMethodForAction,
   setSessionCookie,
+  encryptSession,
+  decryptSession,
+  clearSessionCookie,
+  getSessionFromCookies,
+  type SessionPayload,
 } from "../../api/_shared/gas-client";
 
 describe("resolveGASMethodForAction", () => {
@@ -61,5 +66,74 @@ describe("ALLOWED_ACTIONS técnico/equipe", () => {
 
   it("alinha o cookie Vercel ao TTL de 12h do AUTH62", () => {
     expect(setSessionCookie("teste")).toContain("Max-Age=43200");
+  });
+});
+
+describe("hardening da sessão criptografada", () => {
+  const originalSecret = process.env.SESSION_COOKIE_SECRET;
+  const testSecret = "segredo-de-teste-local-com-mais-de-32-caracteres";
+  const agora = Date.now();
+
+  const sessaoBase: SessionPayload = {
+    token: "token-ficticio-apenas-para-teste",
+    perfil: "TECNICO",
+    nome: "Tecnico Teste",
+    login: "tecnico.teste",
+    unidade: "TH30",
+    criado_em: agora,
+    permissoes: [],
+  };
+
+  beforeAll(() => {
+    process.env.SESSION_COOKIE_SECRET = testSecret;
+  });
+
+  afterAll(() => {
+    if (originalSecret === undefined) {
+      delete process.env.SESSION_COOKIE_SECRET;
+    } else {
+      process.env.SESSION_COOKIE_SECRET = originalSecret;
+    }
+  });
+
+  it("descriptografa uma sessão válida sem expor o token no cookie em texto puro", async () => {
+    const cookie = await encryptSession(sessaoBase);
+    expect(cookie).not.toContain(sessaoBase.token);
+    expect(await decryptSession(cookie)).toEqual(sessaoBase);
+  });
+
+  it("nega sessão ausente", () => {
+    expect(getSessionFromCookies(null)).toBeNull();
+    expect(getSessionFromCookies("outro_cookie=valor")).toBeNull();
+  });
+
+  it("nega cookie adulterado", async () => {
+    const cookie = await encryptSession(sessaoBase);
+    const pos = Math.floor(cookie.length / 2);
+    const trocado = cookie[pos] === "A" ? "B" : "A";
+    const alterado = cookie.slice(0, pos) + trocado + cookie.slice(pos + 1);
+    expect(await decryptSession(alterado)).toBeNull();
+  });
+
+  it("nega cookie inválido ou ilegível", async () => {
+    expect(await decryptSession("cookie-invalido")).toBeNull();
+  });
+
+  it("nega sessão expirada após 12 horas", async () => {
+    const expirado = await encryptSession({
+      ...sessaoBase,
+      criado_em: Date.now() - 12 * 60 * 60 * 1000 - 60_000,
+    });
+    expect(await decryptSession(expirado)).toBeNull();
+  });
+
+  it("mantém atributos de segurança e limpeza do cookie", () => {
+    const criado = setSessionCookie("valor-ficticio");
+    expect(criado).toContain("HttpOnly");
+    expect(criado).toContain("SameSite=Lax");
+    expect(criado).toContain("Path=/");
+    const limpo = clearSessionCookie();
+    expect(limpo).toContain("Max-Age=0");
+    expect(limpo).toContain("HttpOnly");
   });
 });
