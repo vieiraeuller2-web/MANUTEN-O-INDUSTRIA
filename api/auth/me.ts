@@ -62,16 +62,13 @@ export default async function handler(
       permissoes: gasResponse.permissoes || session.permissoes || [],
     });
   } catch (err) {
-    console.error("[auth/me] Erro:", err);
-    // Em caso de falha de comunicação, usa dados do cookie
-    // (mas não cria nova sessão)
-    return res.status(200).json({
-      authenticated: true,
-      perfil: session.perfil,
-      nome: session.nome,
-      login: session.login,
-      unidade: session.unidade,
-      permissoes: session.permissoes || [],
+    console.error("[auth/me] Erro ao validar sessão no backend:", err);
+    // Fail-closed: o cookie local, isoladamente, não comprova autenticação.
+    // Mantém o cookie para permitir recuperação após falha transitória do backend,
+    // mas não declara o usuário autenticado sem confirmação do AUTH62.
+    return res.status(503).json({
+      authenticated: false,
+      message: "Não foi possível validar a sessão",
     });
   }
 }
