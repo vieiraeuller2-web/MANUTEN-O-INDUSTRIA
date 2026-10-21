@@ -1,0 +1,44 @@
+.kron-login{position:relative;min-height:100vh;min-height:100dvh;overflow:hidden;background:#080d15;color:#f7f7f8;font-family:Inter,system-ui,sans-serif}
+.kron-login__media,.kron-login__video,.kron-login__grid,.kron-login__scan{position:absolute;inset:0}
+.kron-login__media{background:radial-gradient(ellipse at 21% 50%,rgba(122,30,42,.3),transparent 55%),linear-gradient(118deg,#101b2b,#060b14 75%);background-image:linear-gradient(90deg,rgba(4,9,17,.48),rgba(5,8,13,.78)),url('/kron-login-poster.svg');background-size:cover;background-position:center}
+.kron-login__video{width:100%;height:100%;object-fit:cover;opacity:.66}
+.kron-login__media:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,10,18,.67),rgba(7,11,19,.28) 52%,rgba(4,8,15,.76)),linear-gradient(0deg,rgba(4,8,15,.82),transparent 35%,rgba(4,8,15,.45))}
+.kron-login__grid{opacity:.17;background-image:linear-gradient(rgba(221,226,232,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(221,226,232,.12) 1px,transparent 1px);background-size:64px 64px;mask-image:linear-gradient(0deg,black,transparent 75%);pointer-events:none}
+.kron-login__scan{inset:auto 0 0;height:2px;background:linear-gradient(90deg,transparent,#c24a52,transparent);box-shadow:0 0 18px #a4313c;opacity:.35;animation:kron-scan 11s ease-in-out infinite;pointer-events:none}
+.kron-login__layout{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1.12fr) minmax(350px,.88fr);gap:clamp(30px,5vw,100px);align-items:center;min-height:100vh;min-height:100dvh;max-width:1560px;margin:auto;padding:clamp(28px,6vw,90px)}
+.kron-login__hero{max-width:750px;animation:kron-enter .8s ease-out both}
+.kron-login__eyebrow,.kron-login__section-tag,.kron-login__secure,.kron-login__access-signature,.kron-login__hero-bottom{font-size:11px;letter-spacing:.16em;font-weight:700}
+.kron-login__eyebrow{display:flex;gap:12px;align-items:center;color:#e8c3c4}
+.kron-login__pulse{width:8px;height:8px;border-radius:50%;background:#e85964;box-shadow:0 0 0 6px rgba(232,89,100,.15),0 0 18px #e85964;animation:kron-pulse 2.5s ease-in-out infinite}
+.kron-login__brand{display:flex;align-items:center;gap:14px;margin-top:42px;font-weight:800;font-size:clamp(45px,6.5vw,94px);letter-spacing:.07em;line-height:1}
+.kron-login__mark{display:grid;place-items:center;width:clamp(55px,6vw,78px);height:clamp(55px,6vw,78px);border:1px solid rgba(231,78,87,.65);background:rgba(180,35,50,.12);clip-path:polygon(18% 0,82% 0,100% 18%,100% 82%,82% 100%,18% 100%,0 82%,0 18%);color:#f0757c}
+.kron-login__brand-dot{color:#e45360}
+.kron-login__hero h1{font-size:clamp(28px,3.5vw,58px);line-height:1.16;letter-spacing:-.035em;margin-top:34px;font-weight:700;text-wrap:balance}
+.kron-login__hero>p{font-size:clamp(14px,1.15vw,18px);line-height:1.75;max-width:520px;color:#c1c8d3;margin-top:22px}
+.kron-login__hero-bottom{display:flex;flex-wrap:wrap;gap:25px;color:#b4beca;margin-top:78px;font-size:10px}
+.kron-login__hero-bottom span{display:inline-flex;align-items:center;gap:10px}
+.kron-login__hero-bottom svg{color:#e27c83}
+.kron-login__access{width:100%;max-width:470px;justify-self:end;animation:kron-enter .8s .14s ease-out both}
+.kron-login__panel{padding:clamp(26px,3.4vw,46px);border:1px solid rgba(212,222,235,.19);background:linear-gradient(145deg,rgba(25,34,49,.9),rgba(9,15,27,.91));box-shadow:0 24px 90px rgba(0,0,0,.56),inset 0 1px 0 rgba(255,255,255,.1);border-radius:18px;backdrop-filter:blur(16px)}
+.kron-login__panel-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:40px}
+.kron-login__panel-icon{display:grid;place-items:center;width:45px;height:45px;border:1px solid rgba(229,84,97,.35);border-radius:12px;background:rgba(214,55,70,.1);color:#f0808b}
+.kron-login__secure{color:#aab5c4;font-size:9px}
+.kron-login__section-tag{color:#f0808b;margin-bottom:12px}
+.kron-login__panel h2{color:white;font-size:clamp(24px,2.2vw,32px);font-weight:700;letter-spacing:-.03em}
+.kron-login__muted{color:#aeb7c4;font-size:13px;line-height:1.65;margin-top:9px;margin-bottom:34px}
+.kron-login__field{margin-top:19px}
+.kron-login__field label{display:block;color:#e3e9f0;margin-bottom:9px;font-size:13px}
+.kron-login__field input{height:49px;background:rgba(5,11,21,.63);border:1px solid #394456;border-radius:9px;color:#fff;font-size:14px}
+.kron-login__field input::placeholder{color:#8d9aac}
+.kron-login__field input:focus-visible{outline:2px solid #e45360;outline-offset:1px;border-color:#e45360}
+.kron-login__submit{height:51px;width:100%;margin-top:30px;display:flex;gap:10px;align-items:center;justify-content:center;background:linear-gradient(105deg,#a52637,#d34854);color:white!important;border:1px solid rgba(255,255,255,.12);border-radius:9px;font-weight:700;letter-spacing:.015em;transition:transform .2s,filter .2s}
+.kron-login__submit:hover:not(:disabled){background:linear-gradient(105deg,#b62d3d,#e25963);transform:translateY(-2px)}
+.kron-login__submit:disabled{opacity:.7;cursor:not-allowed}
+.kron-login__panel-footer{display:flex;gap:9px;align-items:flex-start;border-top:1px solid rgba(206,220,237,.12);padding-top:23px;margin-top:27px;color:#98a5b5;font-size:11px;line-height:1.5}
+.kron-login__panel-footer svg{flex-shrink:0;color:#acb8c7}
+.kron-login__access-signature{margin-top:22px;text-align:center;color:#9aa6b7;font-size:9px}
+@keyframes kron-enter{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes kron-pulse{50%{box-shadow:0 0 0 10px rgba(232,89,100,0),0 0 25px #e85964}}
+@keyframes kron-scan{0%,100%{transform:translateY(0);opacity:0}35%{opacity:.35}55%{transform:translateY(-65vh);opacity:.23}75%{opacity:0}}
+@media(max-width:850px){.kron-login__layout{grid-template-columns:1fr;max-width:570px;padding:28px 18px 34px;gap:30px;align-content:center}.kron-login__brand{margin-top:19px;font-size:48px}.kron-login__mark{width:54px;height:54px}.kron-login__hero h1{font-size:27px;margin-top:17px}.kron-login__hero>p{margin-top:12px;font-size:13px}.kron-login__hero-bottom{display:none}.kron-login__access{justify-self:center;max-width:100%}.kron-login__panel{padding:25px}.kron-login__panel-top{margin-bottom:20px}.kron-login__muted{margin-bottom:21px}.kron-login__eyebrow{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.kron-login__scan,.kron-login__pulse,.kron-login__hero,.kron-login__access{animation:none!important}.kron-login__video{display:none}.kron-login__submit{transition:none}}
