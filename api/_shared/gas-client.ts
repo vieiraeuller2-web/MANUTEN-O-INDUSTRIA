@@ -39,7 +39,7 @@ export interface GASResponse {
 // ── Constantes ─────────────────────────────────────────────────
 
 const SESSION_COOKIE_NAME = "cmi_session";
-const SESSION_MAX_AGE = 8 * 60 * 60; // 8 horas
+const SESSION_MAX_AGE = 12 * 60 * 60; // 12 horas — alinhado ao TTL oficial do AUTH62
 const GAS_TIMEOUT_MS = 30_000;
 
 // ── Whitelist de actions ───────────────────────────────────────
@@ -55,8 +55,6 @@ export const ALLOWED_ACTIONS = new Set([
   "equipe_colaborador_criar",
   "equipe_acessos",
   "equipe_acesso_criar",
-  "equipe_acesso_status",
-  "equipe_acesso_redefinir_senha",
   "equipe_tecnicos",
   "equipe_tecnico_criar",
   "equipe_tecnico_status",
