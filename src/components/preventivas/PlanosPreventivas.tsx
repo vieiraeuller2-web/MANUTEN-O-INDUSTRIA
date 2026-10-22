@@ -8,8 +8,7 @@ import {
   formatarDataPreventiva,
   formatarModalidadePlano,
   formatarPeriodicidadePlano,
-  formatarStatusPlano,
-  valorEhNao,
+  situacaoEfetivaPlano,
 } from "./preventivas-utils";
 
 interface PlanosPreventivasProps {
@@ -43,7 +42,7 @@ function agruparPlanos(planos: PlanoPreventiva[]) {
 }
 
 function PlanoCard({ plano, selecionado, onSelecionar }: { plano: PlanoPreventiva; selecionado: boolean; onSelecionar: () => void }) {
-  const status = valorEhNao(plano.ativo) ? "INATIVO" : formatarStatusPlano(plano.status_plano);
+  const { status, diasRestantes } = situacaoEfetivaPlano(plano);
   const quantidade = plano.quantidade_itens ?? plano.total_itens;
   return (
     <button
@@ -76,8 +75,8 @@ function PlanoCard({ plano, selecionado, onSelecionar }: { plano: PlanoPreventiv
               <CalendarDays className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">Próxima: {formatarDataPreventiva(plano.proxima_execucao)}</span>
             </span>
-            {plano.dias_restantes !== "" && plano.dias_restantes !== undefined && plano.dias_restantes !== null && (
-              <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />{String(plano.dias_restantes)} dias restantes</span>
+            {diasRestantes !== null && (
+              <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />{diasRestantes! < 0 ? `${Math.abs(diasRestantes!)} dias de atraso` : `${diasRestantes} dias restantes`}</span>
             )}
             {plano.responsavel_padrao && (
               <span className="inline-flex min-w-0 items-center gap-1.5"><UserRound className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{plano.responsavel_padrao}</span></span>
