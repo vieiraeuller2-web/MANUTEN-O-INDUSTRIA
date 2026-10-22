@@ -59,11 +59,7 @@ export default function KronShell({ children }: { children: ReactNode }) {
           onClick={() => navigate(visibleItems[0]?.path ?? "/")}
           aria-label="KRON — abrir primeiro módulo autorizado"
         >
-          <span className="kron-sidebar__monogram">K</span>
-          <span className="kron-sidebar__wordmark">
-            <strong>KRON<span>.</span></strong>
-            <small>CENTRO DE CONTROLE</small>
-          </span>
+          <img className="kron-sidebar__brand-image" src="/kron-brand-sidebar.svg" alt="KRON — Centro de Controle da Manutenção" width={208} height={54}/>
         </button>
 
         <div className="kron-sidebar__navigation">
@@ -108,7 +104,7 @@ export default function KronShell({ children }: { children: ReactNode }) {
 
       <div className="kron-shell__surface">
         <header className="kron-topbar">
-          <div className="kron-topbar__brand-mobile"><span>K</span><strong>KRON<b>.</b></strong></div>
+          <div className="kron-topbar__brand-mobile"><img src="/kron-brand-sidebar.svg" alt="KRON" width={135} height={31}/></div>
           <div className="kron-topbar__location">
             <span>KRON</span>
             <ChevronRight size={14} aria-hidden="true" />
