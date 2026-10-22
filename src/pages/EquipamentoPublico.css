@@ -877,3 +877,17 @@
     transition: none !important;
   }
 }
+
+/* KRON public equipment record — Thor-inspired command interface */
+.qr-public-page,.qr-state-page{--qr-bg:#0c0e13;--qr-panel:#15171e;--qr-panel-raised:#1b1d26;--qr-border:rgba(183,185,198,.16);--qr-text:#f5f3f4;--qr-muted:#a8a7b3;--qr-cyan:#e05c72;--qr-cyan-soft:rgba(190,40,66,.14);--qr-amber:#dfab4c;--qr-green:#54b38c;--qr-red:#ef7280;background:radial-gradient(circle at 85% -5%,rgba(185,35,61,.13),transparent 30rem),linear-gradient(180deg,#14151c,#0b0d12 62%,#090b10)}
+.qr-public-header{background:rgba(12,13,19,.92);border-color:rgba(188,191,203,.13)}.qr-brand-mark{border-color:rgba(219,93,112,.34);background:rgba(196,43,65,.13);color:#e98191}
+.qr-brand strong{font-size:.95rem;letter-spacing:.09em}.qr-brand span{color:#e78896}.qr-readonly svg{color:#69c49b}
+.qr-machine-hero{background:radial-gradient(circle at 86% 30%,rgba(172,33,55,.2),transparent 40%),linear-gradient(114deg,#191a23,#11131a);border-color:rgba(211,76,98,.29)}.qr-hazard-line{height:3px;background:linear-gradient(90deg,#b62a45,#ef7084 45%,transparent)}
+.qr-tag-block{border-color:rgba(229,106,124,.3);background:rgba(199,48,73,.1)}.qr-tag-block span,.qr-eyebrow{color:#ef8b9b}
+.qr-card,.qr-summary-card{background:linear-gradient(145deg,#191b23,#13151c);border-color:rgba(192,196,211,.15);box-shadow:0 14px 30px -28px rgba(0,0,0,.7)}.qr-summary-card.is-blue{border-color:rgba(219,81,105,.28)}
+.qr-checklist-button,.qr-retry-button{background:linear-gradient(135deg,#b52c45,#842039)!important;border-color:rgba(226,105,122,.45)!important;color:#fff!important;box-shadow:0 8px 20px rgba(135,30,49,.19)}.qr-checklist-button:hover,.qr-retry-button:hover{background:linear-gradient(135deg,#c43851,#952941)!important}
+.qr-chart .is-lubrication,.qr-chart-legend .is-lubrication{background:#c84d68}
+.qr-reliability{margin:1rem 0;background:linear-gradient(135deg,#1d1e27,#11131a);color:var(--qr-text);border-radius:16px;border:1px solid rgba(210,78,102,.24);padding:23px}
+.qr-reliability__heading{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:17px}.qr-reliability__heading>div>span{color:#e58090;font-weight:800;letter-spacing:.13em;font-size:10px}.qr-reliability__heading h2{font-size:1.24rem;margin:7px 0!important;line-height:1.3}.qr-reliability__heading p{color:var(--qr-muted);font-size:.72rem;line-height:1.6}.qr-reliability__heading>svg{height:34px;width:34px;color:#e07589;flex-shrink:0}
+.qr-reliability__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.qr-reliability__grid>div{display:flex;flex-direction:column;gap:11px;padding:20px;border:1px solid rgba(201,206,220,.14);border-radius:13px;background:rgba(4,5,9,.17)}.qr-reliability__grid span{font-size:.76rem;color:#bfc3cf;font-weight:650}.qr-reliability__grid strong{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}.qr-reliability__grid small{font-size:.65rem;color:var(--qr-muted)}.qr-reliability__notice{margin:15px 2px 0!important;color:var(--qr-muted);font-size:.69rem;line-height:1.5}
+@media(max-width:580px){.qr-reliability{padding:17px}.qr-reliability__grid{grid-template-columns:1fr}.qr-reliability__heading h2{font-size:1.03rem}.qr-reliability__grid>div{padding:16px}}
