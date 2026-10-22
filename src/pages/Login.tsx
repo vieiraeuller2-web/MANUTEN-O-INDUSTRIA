@@ -83,29 +83,31 @@ export default function Login() {
       </div>
 
       <div className="kron-login__layout">
-        <section className="kron-login__hero" aria-label="Apresentação do KRON">
-          <div className="kron-login__eyebrow"><span className="kron-login__pulse" /> PLATAFORMA INDUSTRIAL</div>
-          <div className="kron-login__brand">
-            <div className="kron-login__mark"><Wrench size={35} strokeWidth={1.7} /></div>
-            <span>KRON<span className="kron-login__brand-dot">.</span></span>
-          </div>
-          <h1>Centro de Controle<br />da Manutenção<span className="kron-login__brand-dot">.</span></h1>
-          <p>Operação industrial sob controle. Um ambiente para acompanhar, executar e evoluir sua manutenção.</p>
-          <div className="kron-login__hero-bottom">
-            <span><Activity size={17} /> CONTROLE OPERACIONAL</span>
-            <span><ScanLine size={17} /> RASTREABILIDADE</span>
-          </div>
-        </section>
+        <section className="kron-login__content" aria-label="Identificação e acesso ao KRON">
+          <header className="kron-login__header">
+            <span className="kron-login__logo"><Wrench size={29} strokeWidth={1.7} /></span>
+            <span className="kron-login__brand">
+              <strong>KRON<span className="kron-login__brand-dot">.</span></strong>
+              <small>CENTRO DE CONTROLE DA MANUTENÇÃO</small>
+            </span>
+          </header>
 
-        <section className="kron-login__access" aria-label="Acesso ao sistema">
+          <div className="kron-login__eyebrow">
+            <span className="kron-login__pulse" />
+            PLATAFORMA DE OPERAÇÕES INDUSTRIAIS
+          </div>
+          <h1>O controle da manutenção começa <em>aqui.</em></h1>
+          <p className="kron-login__intro">Sua central de operação, rastreabilidade e gestão da manutenção industrial.</p>
+
           <form onSubmit={handleSubmit} className="kron-login__panel">
-            <div className="kron-login__panel-top">
-              <span className="kron-login__panel-icon"><ShieldCheck size={22} /></span>
-              <span className="kron-login__secure">AMBIENTE RESTRITO</span>
+            <div className="kron-login__panel-head">
+              <div>
+                <span className="kron-login__section-tag">ACESSO À CENTRAL</span>
+                <h2>Bem-vindo ao KRON</h2>
+                <p>Acesse com suas credenciais de trabalho.</p>
+              </div>
+              <span className="kron-login__panel-icon" aria-hidden="true"><ShieldCheck size={23} /></span>
             </div>
-            <p className="kron-login__section-tag">IDENTIFICAÇÃO</p>
-            <h2>Bem-vindo ao KRON</h2>
-            <p className="kron-login__muted">Entre com suas credenciais para acessar a central.</p>
 
             <div className="kron-login__field">
               <Label htmlFor="login-field">Login</Label>
@@ -117,7 +119,7 @@ export default function Login() {
                 required
                 autoComplete="username"
                 autoFocus
-                placeholder="Seu login"
+                placeholder="Digite seu login"
               />
             </div>
 
@@ -132,14 +134,15 @@ export default function Login() {
                   required
                   minLength={4}
                   autoComplete="current-password"
-                  placeholder="Sua senha"
+                  placeholder="Digite sua senha"
                   className="pr-11"
                 />
                 <button
                   type="button"
                   onClick={() => setMostrarSenha((value) => !value)}
-                  className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-slate-400 transition-colors hover:text-white"
+                  className="absolute right-0 top-0 flex h-full w-11 items-center justify-center text-slate-400 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400"
                   aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                  title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                 >
                   {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -147,17 +150,28 @@ export default function Login() {
             </div>
 
             <Button type="submit" className="kron-login__submit" disabled={loading || status === "loading"}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              {loading ? "Autenticando..." : "Acessar central"}
+              {loading || status === "loading"
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <ArrowRight className="h-4 w-4" />}
+              {loading ? "Autenticando..." : status === "loading" ? "Verificando sessão..." : "Entrar no KRON"}
             </Button>
-
-            <div className="kron-login__panel-footer">
-              <ShieldCheck size={15} />
-              Acesso protegido. Em caso de dificuldade, contate o administrador.
-            </div>
+            <p className="kron-login__secure"><ShieldCheck size={14} aria-hidden="true" /> Acesso protegido. Em caso de dificuldade, contate o administrador.</p>
           </form>
-          <div className="kron-login__access-signature">KRON / CENTRO DE CONTROLE DA MANUTENÇÃO</div>
+
+          <footer className="kron-login__footer">
+            <span>KRON / CENTRO DE CONTROLE DA MANUTENÇÃO</span>
+            <span>AMBIENTE OPERACIONAL RESTRITO</span>
+          </footer>
         </section>
+
+        <aside className="kron-login__visual" aria-hidden="true">
+          <div className="kron-login__reticle"><ScanLine size={27} strokeWidth={1.2} /></div>
+          <div className="kron-login__visual-caption">
+            <span><Activity size={15} /> INDÚSTRIA EM MOVIMENTO</span>
+            <strong>PRECISÃO EM CADA OPERAÇÃO.</strong>
+            <span>MANUTENÇÃO • CONTROLE • CONFIABILIDADE</span>
+          </div>
+        </aside>
       </div>
     </main>
   );
