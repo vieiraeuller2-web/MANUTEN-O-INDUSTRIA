@@ -139,9 +139,9 @@ export default function PlanosManutencao() {
     retry: 1,
   });
 
-  const setores = useMemo(() => setoresQuery.data ?? [], [setoresQuery.data]);
-  const ativos = useMemo(() => ativosQuery.data ?? [], [ativosQuery.data]);
-  const planos = useMemo(() => planosQuery.data ?? [], [planosQuery.data]);
+  const setores = useMemo(() => (Array.isArray(setoresQuery.data) ? setoresQuery.data : []).filter((item) => item && typeof item === "object" && typeof item.id_setor === "string" && typeof item.nome_setor === "string"), [setoresQuery.data]);
+  const ativos = useMemo(() => (Array.isArray(ativosQuery.data) ? ativosQuery.data : []).filter((item) => item && typeof item === "object" && typeof item.id_ativo === "string" && typeof item.nome_ativo === "string"), [ativosQuery.data]);
+  const planos = useMemo(() => (Array.isArray(planosQuery.data) ? planosQuery.data : []).filter((item) => item && typeof item === "object" && typeof item.id_plano === "string"), [planosQuery.data]);
   const busca = normalizeText(filtros.busca);
 
   const ativosVisiveis = useMemo(
@@ -188,7 +188,7 @@ export default function PlanosManutencao() {
   }, [idPlanoSelecionado, planosQuery.isSuccess, planosVisiveis, registroAberto]);
 
   const planoDaLista = planos.find((plano) => plano.id_plano === idPlanoSelecionado);
-  const planoExibido = planoCompletoQuery.data?.plano ?? planoDaLista;
+  const planoExibido = planoCompletoQuery.data?.plano && typeof planoCompletoQuery.data.plano.id_plano === "string" ? planoCompletoQuery.data.plano : planoDaLista;
   const nosChecklist = useMemo(() => {
     const completo = planoCompletoQuery.data;
     if (!completo) return [];
@@ -373,7 +373,7 @@ export default function PlanosManutencao() {
                     <button type="button" key={setor.id_setor} onClick={() => { selecionarSetor(setor.id_setor); setVisao("explorar"); }}
                       className="kron-plan-sector" aria-label={`Explorar planos do setor ${setor.nome_setor}`}>
                       <span className="kron-plan-sector__icon"><Network size={17}/></span>
-                      <span><strong>{setor.nome_setor}</strong><small>{setor.quantidade_ativos ?? setor.total_ativos ?? "—"} ativos</small></span>
+                      <span><strong>{setor.nome_setor}</strong><small>{String(typeof (setor.quantidade_ativos ?? setor.total_ativos) === "number" || typeof (setor.quantidade_ativos ?? setor.total_ativos) === "string" ? (setor.quantidade_ativos ?? setor.total_ativos) : "—")} ativos</small></span>
                       <ChevronRight size={17}/>
                     </button>
                   ))}
