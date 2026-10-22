@@ -62,6 +62,15 @@ export type EventoLinhaDoTempo = {
 };
 
 export type ResumoEquipamento = {
+  // Métricas publicadas opcionalmente pela API pública oficial do QR.
+  // O frontend não acessa endpoints AUTH62 protegidos através do QR.
+  indicadores_confiabilidade?: {
+    mttr_h?: number | null;
+    mtbf_calendario_h?: number | null;
+    mtbf_intervalos_validos?: number | null;
+    falhas_confirmadas?: number | null;
+    periodo_referencia?: string;
+  } | null;
   ativo: {
     id_ativo?: string;
     tag_ativo?: string;
