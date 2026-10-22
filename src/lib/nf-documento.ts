@@ -52,7 +52,7 @@ export function documentoDaNota(nota: SheetRow): DocumentoNF | null {
 
   return {
     url: url.toString(),
-    visualizacao: (arquivoPdf || isSupabasePublic || isGoogleStorage) ? url.toString() : null,
+    visualizacao: (isSupabasePublic || isGoogleStorage) ? url.toString() : null,
     origem: (arquivoPdf || isSupabasePublic || isGoogleStorage) ? "pdf" : "externo",
   };
 }
