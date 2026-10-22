@@ -51,8 +51,8 @@ function PageFallback() {
   );
 }
 
-class AppErrorBoundary extends Component<{ children: ReactNode; resetKey: string }, { hasError: boolean }> {
-  state = { hasError: false };
+class AppErrorBoundary extends Component<{ children: ReactNode; resetKey: string }, { hasError: boolean; message: string }> {
+  state = { hasError: false, message: "" };
 
   static getDerivedStateFromError() {
     return { hasError: true };
@@ -60,11 +60,12 @@ class AppErrorBoundary extends Component<{ children: ReactNode; resetKey: string
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("Erro ao carregar tela:", error, info);
+    this.setState({ message: error?.message || "Erro desconhecido" });
   }
 
   componentDidUpdate(prevProps: { resetKey: string }) {
     if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
-      this.setState({ hasError: false });
+      this.setState({ hasError: false, message: "" });
     }
   }
 
@@ -74,7 +75,8 @@ class AppErrorBoundary extends Component<{ children: ReactNode; resetKey: string
         <div className="page-container">
           <div className="stat-card border border-destructive/40 bg-destructive/5 text-center py-8">
             <p className="text-sm font-medium text-destructive mb-2">Erro ao carregar esta tela.</p>
-            <p className="text-xs text-muted-foreground">Atualize a página ou limpe os filtros.</p>
+            <p className="text-xs text-muted-foreground mb-4">O módulo encontrou uma resposta inesperada ou falha de execução. Nenhum dado foi alterado.</p>
+            <button type="button" className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold hover:bg-muted" onClick={() => this.setState({ hasError: false, message: "" })}>Tentar carregar novamente</button>
           </div>
         </div>
       );
