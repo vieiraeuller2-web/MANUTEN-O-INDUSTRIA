@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="470" height="100" viewBox="0 0 470 100" role="img" aria-labelledby="title">
+<title id="title">KRON — Centro de Controle da Manutenção</title>
+<defs>
+ <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9aa1ae"/><stop offset=".4" stop-color="#3f444f"/><stop offset="1" stop-color="#171b24"/></linearGradient>
+ <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f04c65"/><stop offset=".54" stop-color="#b51e3b"/><stop offset="1" stop-color="#6e162a"/></linearGradient>
+</defs>
+<g transform="translate(4 3)">
+ <path d="M43 2 80 23v46L43 90 6 69V23Z" fill="#171a20" stroke="url(#metal)" stroke-width="4"/>
+ <path d="M19 19h18v25l25-25h18L54 44l26 28H58L37 50v22H19Z" fill="url(#metal)"/>
+ <path d="M39 51 64 26h16L54 52 78 73H60Z" fill="url(#red)"/>
+ <path d="M43 31c-12 0-20 7-20 18s8 18 20 18c6 0 11-2 15-6l-9-9c-5 6-14 2-14-4 0-5 8-9 13-4l9-9c-4-3-8-4-14-4Z" fill="#d8dbe3" opacity=".84"/>
+</g>
+<text x="101" y="61" fill="#f6f7fa" font-family="Inter,Arial,sans-serif" font-weight="850" font-size="55" letter-spacing="4">KRON<tspan fill="#de4861">.</tspan></text>
+<text x="102" y="81" fill="#b2bac9" font-family="Inter,Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1.1">CENTRO DE CONTROLE DA MANUTENÇÃO</text>
+</svg>
