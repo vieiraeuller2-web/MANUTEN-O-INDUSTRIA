@@ -15,9 +15,9 @@ const definicoes = [
   { chaves: ["total_ativos"], rotulo: "Ativos", icon: Wrench },
   { chaves: ["total_planos"], rotulo: "Planos", icon: ClipboardCheck },
   { chaves: ["total_itens_verificacao", "total_nos_arvore"], rotulo: "Itens do checklist", icon: ListChecks },
-  { chaves: ["planos_em_dia", "em_dia"], status: ["EM_DIA"], rotulo: "Em dia", icon: CheckCircle2 },
-  { chaves: ["planos_a_vencer", "a_vencer"], status: ["A_VENCER"], rotulo: "A vencer", icon: CalendarClock },
-  { chaves: ["planos_vencidos", "planos_vencidas", "vencidas", "vencida"], status: ["VENCIDA", "VENCIDAS", "VENCIDO"], rotulo: "Vencidas", icon: AlertTriangle },
+  { chaves: ["planos_em_dia", "em_dia"], status: ["EM_DIA"], rotulo: "Em dia (API)", icon: CheckCircle2 },
+  { chaves: ["planos_a_vencer", "a_vencer"], status: ["A_VENCER"], rotulo: "A vencer (API)", icon: CalendarClock },
+  { chaves: ["planos_vencidos", "planos_vencidas", "vencidas", "vencida"], status: ["VENCIDA", "VENCIDAS", "VENCIDO"], rotulo: "Vencidas (API)", icon: AlertTriangle },
   { chaves: ["planos_sem_data_base", "sem_data_base"], status: ["SEM_DATA_BASE"], rotulo: "Sem data-base", icon: Layers3 },
 ] as const;
 
@@ -68,6 +68,8 @@ export default function PreventivasResumo({ resumo, isLoading, error, onTentarNo
   if (!cards.length) return null;
 
   return (
+    <div>
+      <p className="mb-3 text-[11px] text-muted-foreground">Os totais agregados de situação são informados pela API. Nos cards dos planos, o prazo é conferido pela data da próxima execução.</p>
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
       {cards.map(({ rotulo, icon: Icone, valor }) => (
         <div key={rotulo} className="stat-card min-w-0 p-3">
@@ -78,6 +80,7 @@ export default function PreventivasResumo({ resumo, isLoading, error, onTentarNo
           <p className="text-2xl font-bold tabular-nums text-foreground">{String(valor)}</p>
         </div>
       ))}
+    </div>
     </div>
   );
 }
