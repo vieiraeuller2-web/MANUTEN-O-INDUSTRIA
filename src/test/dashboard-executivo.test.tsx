@@ -1,6 +1,7 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("@/hooks/use-kpi", () => ({
   useKpiOperacionalResumo: vi.fn(() => ({
@@ -116,7 +117,7 @@ import DashboardExecutivo from "@/pages/DashboardExecutivo";
 
 describe("DashboardExecutivo", () => {
   it("exibe KPIs oficiais e não mostra disponibilidade calculada", () => {
-    render(<DashboardExecutivo />);
+    render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><DashboardExecutivo /></QueryClientProvider>);
 
     expect(screen.getByText("120")).toBeTruthy();
     expect(screen.getByText("8")).toBeTruthy();
