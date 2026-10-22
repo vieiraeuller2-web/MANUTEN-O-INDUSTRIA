@@ -21,8 +21,8 @@ import {
 } from "@/components/preventivas/preventivas-utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { normalizeText, safeString, uniqueSorted } from "@/lib/data-helpers";
+import { useAuth } from "@/contexts/AuthContext";
+import { normalizeText, uniqueSorted } from "@/lib/data-helpers";
 import { cn } from "@/lib/utils";
 import {
   buscarAtivosPreventivas,
@@ -91,7 +91,8 @@ export default function PlanosManutencao() {
   const [pdfsCarregando, setPdfsCarregando] = useState<Set<ChavePdf>>(() => new Set());
   const [registroAberto, setRegistroAberto] = useState(false);
   const [visao, setVisao] = useState<"mapa" | "explorar">("mapa");
-  const [usuarioAtual, setUsuarioAtual] = useState("");
+  const { user } = useAuth();
+  const usuarioAtual = user?.nome || user?.login || "";
 
   const idSetor = filtros.setor === TODOS_FILTRO ? "" : filtros.setor;
   const idAtivo = filtros.ativo === TODOS_FILTRO ? "" : filtros.ativo;
@@ -197,24 +198,6 @@ export default function PlanosManutencao() {
   const itensFinais = useMemo(() => obterItensFinaisPreventiva(nosChecklist), [nosChecklist]);
   const setorSelecionado = setores.find((setor) => setor.id_setor === idSetor);
   const ativoSelecionado = ativos.find((ativo) => ativo.id_ativo === idAtivo);
-
-  useEffect(() => {
-    let montado = true;
-    void supabase.auth.getSession()
-      .then(({ data }) => {
-        const usuario = data.session?.user;
-        if (!usuario || !montado) return;
-        const metadados = usuario.user_metadata;
-        const nome = safeString(
-          metadados?.full_name || metadados?.name || metadados?.nome || usuario.email,
-        );
-        setUsuarioAtual(nome);
-      })
-      .catch(() => undefined);
-    return () => {
-      montado = false;
-    };
-  }, []);
 
   const etapa = idPlanoSelecionado ? 4 : idAtivo ? 3 : idSetor ? 2 : 1;
 
