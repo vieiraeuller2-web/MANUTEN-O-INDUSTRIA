@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useIsFetching, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileDown, Loader2 } from "lucide-react";
+import { ArrowLeft, FileDown, Loader2, LayoutGrid, Network, ChevronRight, CalendarClock, Activity } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import RefreshButton from "@/components/RefreshButton";
 import ArvorePreventiva from "@/components/preventivas/ArvorePreventiva";
@@ -90,6 +90,7 @@ export default function PlanosManutencao() {
   const [idPlanoSelecionado, setIdPlanoSelecionado] = useState("");
   const [pdfsCarregando, setPdfsCarregando] = useState<Set<ChavePdf>>(() => new Set());
   const [registroAberto, setRegistroAberto] = useState(false);
+  const [visao, setVisao] = useState<"mapa" | "explorar">("mapa");
   const [usuarioAtual, setUsuarioAtual] = useState("");
 
   const idSetor = filtros.setor === TODOS_FILTRO ? "" : filtros.setor;
@@ -341,6 +342,46 @@ export default function PlanosManutencao() {
       </div>
 
       <div className="space-y-4">
+        <section className="kron-plan-overview">
+          <div className="kron-plan-overview__heading">
+            <div><span className="kron-plan-overview__eyebrow"><Activity size={14}/> VISÃO DE CONTROLE</span><h2>Panorama dos planos</h2>
+              <p>Explore por setor e equipamento. Os totais abaixo vêm do resumo oficial da API.</p></div>
+            <div className="kron-plan-overview__switch" role="group" aria-label="Alternar visualização">
+              <button type="button" aria-pressed={visao === "mapa"} className={visao === "mapa" ? "is-active" : ""}
+                onClick={() => setVisao("mapa")}><LayoutGrid size={16}/> Mapa geral</button>
+              <button type="button" aria-pressed={visao === "explorar"} className={visao === "explorar" ? "is-active" : ""}
+                onClick={() => setVisao("explorar")}><Network size={16}/> Explorar planos</button>
+            </div>
+          </div>
+          {visao === "mapa" && (
+            <div className="kron-plan-overview__content">
+              <div className="kron-plan-overview__stats">
+                {[
+                  { titulo: "Planos cadastrados", valor: resumoQuery.data?.indicadores?.total_planos },
+                  { titulo: "Ativos", valor: resumoQuery.data?.indicadores?.total_ativos },
+                  { titulo: "Setores", valor: resumoQuery.data?.indicadores?.total_setores },
+                ].map((indicador) => (
+                  <div key={indicador.titulo}><span>{indicador.titulo}</span><strong>{indicador.valor == null ? "—" : String(indicador.valor)}</strong></div>
+                ))}
+              </div>
+              <div className="kron-plan-overview__sectors">
+                <h3>Selecionar setor para explorar</h3>
+                {setoresQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando setores...</p>
+                  : setoresQuery.isError ? <p className="text-sm text-destructive">Falha ao carregar setores.</p>
+                  : setores.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum setor disponível.</p>
+                  : setores.map((setor) => (
+                    <button type="button" key={setor.id_setor} onClick={() => { selecionarSetor(setor.id_setor); setVisao("explorar"); }}
+                      className="kron-plan-sector" aria-label={`Explorar planos do setor ${setor.nome_setor}`}>
+                      <span className="kron-plan-sector__icon"><Network size={17}/></span>
+                      <span><strong>{setor.nome_setor}</strong><small>{setor.quantidade_ativos ?? setor.total_ativos ?? "—"} ativos</small></span>
+                      <ChevronRight size={17}/>
+                    </button>
+                  ))}
+              </div>
+              <p className="kron-plan-overview__foot"><CalendarClock size={14}/> A consulta detalhada permanece sob demanda para preservar a velocidade do sistema.</p>
+            </div>
+          )}
+        </section>
         <PreventivasResumo
           resumo={resumoQuery.data}
           isLoading={resumoQuery.isLoading}
@@ -348,7 +389,7 @@ export default function PlanosManutencao() {
           onTentarNovamente={() => void resumoQuery.refetch()}
         />
 
-        <PreventivasFiltros
+        {visao === "explorar" && <PreventivasFiltros
           filtros={filtros}
           setores={setores}
           ativos={ativos}
@@ -357,9 +398,9 @@ export default function PlanosManutencao() {
           status={statusDisponiveis}
           onChange={alterarFiltro}
           onLimpar={limparFiltros}
-        />
+        />}
 
-        {(idSetor || idAtivo) && (
+        {visao === "explorar" && (idSetor || idAtivo) && (
           <div className="stat-card flex flex-wrap items-center justify-between gap-3 p-3">
             <div>
               <p className="text-xs font-semibold text-foreground">Ações do contexto selecionado</p>
@@ -387,7 +428,7 @@ export default function PlanosManutencao() {
           </div>
         )}
 
-        <div ref={fluxoRef} className="scroll-mt-4">
+        {visao === "explorar" && <div ref={fluxoRef} className="scroll-mt-4">
           {etapa > 1 && (
             <Button type="button" size="sm" variant="ghost" className="mb-2 gap-1.5 md:hidden" onClick={voltarEtapa}>
               <ArrowLeft className="h-4 w-4" /> Voltar à etapa anterior
@@ -447,7 +488,7 @@ export default function PlanosManutencao() {
               podeRegistrar={Boolean(planoExibido && itensFinais.length && !planoCompletoQuery.isLoading && !planoCompletoQuery.error)}
             />
           </div>
-        </div>
+        </div>}
       </div>
 
       <RegistrarPreventiva
