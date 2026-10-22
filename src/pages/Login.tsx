@@ -92,10 +92,6 @@ export default function Login() {
             </span>
           </header>
 
-          <div className="kron-login__eyebrow">
-            <span className="kron-login__pulse" />
-            PLATAFORMA DE OPERAÇÕES INDUSTRIAIS
-          </div>
           <h1>O controle da manutenção começa <em>aqui.</em></h1>
           <p className="kron-login__intro">Sua central de operação, rastreabilidade e gestão da manutenção industrial.</p>
 
