@@ -434,6 +434,11 @@ export default function EquipamentoPublico() {
   const { dados, atualizadoEm } = estado;
   const { ativo, situacao } = dados;
   const statusPreventiva = situacao.proxima_preventiva_status || dados.proxima_preventiva?.status_plano;
+  const confiabilidade = dados.indicadores_confiabilidade;
+  const formatarIndicador = (valor: number | null | undefined) =>
+    typeof valor === "number" && Number.isFinite(valor) && valor >= 0
+      ? `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} h`
+      : "—";
 
   return (
     <div className="qr-public-page">
@@ -442,8 +447,8 @@ export default function EquipamentoPublico() {
           <div className="qr-brand">
             <span className="qr-brand-mark"><Factory aria-hidden="true" /></span>
             <div>
-              <span>CONTROLE DE</span>
-              <strong>MANUTENÇÃO INDUSTRIAL</strong>
+              <span>KRON · CENTRO DE CONTROLE</span>
+              <strong>PRONTUÁRIO INDUSTRIAL</strong>
             </div>
           </div>
           <span className="qr-readonly"><ShieldCheck aria-hidden="true" /> Somente leitura</span>
@@ -494,6 +499,23 @@ export default function EquipamentoPublico() {
             <span className="qr-os-number">{numero(situacao.os_ultimos_30_dias)}</span>
             <div><p>OS nos últimos 30 dias</p><strong>Ordens registradas</strong></div>
           </Card>
+        </section>
+
+        <section className="qr-reliability" aria-label="Indicadores de confiabilidade">
+          <div className="qr-reliability__heading">
+            <div><span>INDICADORES DE CONFIABILIDADE</span><h2>MTTR e MTBF do equipamento</h2>
+              <p>Indicadores oficiais — quando publicados na API pública deste prontuário.</p></div>
+            <CircleGauge aria-hidden="true"/>
+          </div>
+          <div className="qr-reliability__grid">
+            <div><span>MTTR · Tempo médio de reparo</span><strong>{formatarIndicador(confiabilidade?.mttr_h)}</strong>
+              <small>Falhas confirmadas: {confiabilidade?.falhas_confirmadas ?? "—"}</small></div>
+            <div><span>MTBF · Entre falhas (calendário)</span>
+              <strong>{confiabilidade?.mtbf_intervalos_validos && confiabilidade.mtbf_intervalos_validos > 0 ? formatarIndicador(confiabilidade.mtbf_calendario_h) : "—"}</strong>
+              <small>Intervalos válidos: {confiabilidade?.mtbf_intervalos_validos ?? "—"}</small></div>
+          </div>
+          {!confiabilidade && <p className="qr-reliability__notice">O serviço público ainda não fornece estes KPIs. Valores não são estimados a partir das OS; a publicação pelo backend oficial é necessária.</p>}
+          {confiabilidade?.periodo_referencia && <p className="qr-reliability__notice">Período: {confiabilidade.periodo_referencia}</p>}
         </section>
 
         <div className="qr-content-grid">
