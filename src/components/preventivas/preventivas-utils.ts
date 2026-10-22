@@ -113,6 +113,70 @@ export function formatarStatusPlano(valor: unknown): string {
   return rotulos[status] ?? (status ? status.replace(/_/g, " ") : "SEM DATA-BASE");
 }
 
+
+/**
+ * Prioridade da situação no card: plano inativo, data de próxima execução
+ * válida (calendário local da unidade), dias restantes e, por último,
+ * status devolvido pelo backend.
+ *
+ * A UI não redefine agendamento/periodicidade de dias úteis. Ela apenas
+ * evita que um prazo já vencido apareça em verde quando o status da API
+ * estiver desatualizado.
+ */
+function dataCalendario(valor: unknown): number | null {
+  if (valor == null || valor === "") return null;
+  const texto = String(valor).trim();
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:$|[T\s])/.exec(texto);
+  const br = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:$|\s)/.exec(texto);
+  const ano = Number(iso?.[1] ?? br?.[3]);
+  const mes = Number(iso?.[2] ?? br?.[2]);
+  const dia = Number(iso?.[3] ?? br?.[1]);
+  if (!ano || !mes || !dia) return null;
+  const timestamp = Date.UTC(ano, mes - 1, dia);
+  const data = new Date(timestamp);
+  return data.getUTCFullYear() === ano &&
+    data.getUTCMonth() + 1 === mes &&
+    data.getUTCDate() === dia
+    ? timestamp : null;
+}
+
+function hojeCalendario(agora: Date): number {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Fortaleza", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(agora);
+  const campo = (chave: string) => Number(partes.find((parte) => parte.type === chave)?.value);
+  return Date.UTC(campo("year"), campo("month") - 1, campo("day"));
+}
+
+export function situacaoEfetivaPlano(plano: PlanoPreventiva, agora: Date = new Date()): {
+  status: string;
+  diasRestantes: number | null;
+} {
+  if (valorEhNao(plano.ativo)) return { status: "INATIVO", diasRestantes: null };
+
+  const proxima = dataCalendario(plano.proxima_execucao);
+  const dias = proxima === null
+    ? (() => {
+        const texto = String(plano.dias_restantes ?? "").trim();
+        if (!/^[-+]?\d+$/.test(texto)) return null;
+        const valor = Number(texto);
+        return Number.isSafeInteger(valor) ? valor : null;
+      })()
+    : Math.round((proxima - hojeCalendario(agora)) / 86400000);
+
+  const informado = formatarStatusPlano(plano.status_plano);
+  if (dias === null) {
+    // Sem data ou contagem confiável, nunca afirmar falsamente "EM DIA".
+    return { status: informado === "EM DIA" ? "SEM DATA-BASE" : informado, diasRestantes: null };
+  }
+  if (dias < 0) return { status: "VENCIDA", diasRestantes: dias };
+  if (dias <= 7) return { status: "A VENCER", diasRestantes: dias };
+  // Uma data confirmada no futuro corrige um status antigo de vencimento.
+  const status = informado === "VENCIDA" || informado === "A VENCER" || informado === "SEM DATA-BASE"
+    ? "EM DIA" : informado;
+  return { status, diasRestantes: dias };
+}
+
 export function formatarDataPreventiva(valor: unknown): string {
   const texto = safeString(valor);
   if (!texto) return "Não informada";
