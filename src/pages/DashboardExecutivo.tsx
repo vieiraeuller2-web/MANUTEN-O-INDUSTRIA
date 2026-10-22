@@ -92,7 +92,7 @@ function MetricCard({
   icon: typeof Activity;
 }) {
   return (
-    <Card>
+    <Card className="kron-report-card kron-report-card--metric">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
@@ -121,7 +121,7 @@ function RankingBarChart({
   valueFormatter: (value: number) => string;
 }) {
   return (
-    <Card>
+    <Card className="kron-report-card kron-report-card--chart">
       <CardHeader className="pb-2">
         <CardTitle className="text-base">{title}</CardTitle>
         <p className="text-xs text-muted-foreground">{description}</p>
@@ -139,11 +139,12 @@ function RankingBarChart({
                 layout="vertical"
                 margin={{ top: 4, right: 24, bottom: 4, left: 20 }}
               >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 5" horizontal={false} stroke="hsl(var(--border))" />
                 <XAxis
                   type="number"
                   tickFormatter={(value) => valueFormatter(Number(value))}
                   fontSize={11}
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
                 />
                 <YAxis
                   type="category"
@@ -152,15 +153,18 @@ function RankingBarChart({
                   fontSize={11}
                   tickLine={false}
                   axisLine={false}
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
                 />
                 <Tooltip
                   formatter={(value) => valueFormatter(Number(value))}
                   labelFormatter={(label) => String(label)}
+                  cursor={{ fill: "hsl(var(--primary) / .06)" }}
                 />
                 <Bar
                   dataKey={valueKey}
                   fill="hsl(var(--primary))"
-                  radius={[0, 4, 4, 0]}
+                  maxBarSize={21}
+                  radius={[0, 7, 7, 0]}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -323,7 +327,7 @@ export default function DashboardExecutivo() {
         </Button>
       </div>
 
-      <Card className="mb-6">
+      <Card className="kron-report-card mb-6">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Filtros globais compatíveis</CardTitle>
           <p className="text-xs text-muted-foreground">
@@ -478,7 +482,7 @@ export default function DashboardExecutivo() {
           </div>
 
           <div className="mt-6 grid gap-4 xl:grid-cols-[2fr_1fr]">
-            <Card>
+            <Card className="kron-report-card">
               <CardHeader>
                 <CardTitle className="text-base">
                   Equipamentos com mais falhas
@@ -605,7 +609,7 @@ export default function DashboardExecutivo() {
             />
           </div>
 
-          <Card className="mt-6 border-dashed">
+          <Card className="kron-report-card mt-6 border-dashed">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">
                 Próxima camada: evolução temporal
