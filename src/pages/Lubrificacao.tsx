@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Droplets, AlertTriangle, CheckCircle2, Clock, Gauge,
-  AlertCircle, Download, Search,
+  AlertCircle, Download, Search, SlidersHorizontal, Activity,
 } from "lucide-react";
 import { formatDataBr } from "@/lib/time-helpers";
 import { safeArray } from "@/lib/data-helpers";
@@ -261,25 +261,34 @@ ${semPendentes
 
   return (
     <div className="page-container">
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <PageHeader title="Lubrificação" subtitle="Controle de lubrificações por horímetro" />
-        <div className="flex items-center gap-2">
-          <RefreshButton onClick={() => refetch()} isFetching={isFetching} />
+      <section className="kron-command-banner">
+        <div className="kron-command-banner__body">
+          <span className="kron-command-eyebrow">CENTRO DE CONTROLE • MANUTENÇÃO</span>
+          <PageHeader title="Controle de lubrificação" subtitle="Monitoramento de ativos por horímetro" />
+          <p className="kron-command-banner__description">
+            Acompanhe intervalos, antecipe vencimentos e identifique equipamentos que exigem atenção.
+            Os estados respeitam os dados e critérios existentes de lubrificação.
+          </p>
         </div>
+        <div className="kron-command-banner__side">
+          <span className="kron-command-banner__side-icon"><Activity size={28} strokeWidth={1.45}/></span>
+          <div><strong>{isLoading ? "—" : stats.total}</strong><br/><small>ATIVOS MONITORADOS</small></div>
+          <span>KRON / LUBRIFICAÇÃO</span>
+        </div>
+      </section>
+
+      <div className="kron-command-controls">
+        <div><h2>Visão operacional</h2><p>Indicadores do controle de lubrificação</p></div>
+        <RefreshButton onClick={() => refetch()} isFetching={isFetching} />
       </div>
 
-      <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
-        As lubrificações são controladas pela diferença entre o horímetro atual e o horímetro da última lubrificação.
-        O status é calculado conforme o intervalo definido para cada equipamento.
-      </p>
-
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
+      <div className="kron-lube-kpis grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
         <KpiCard icon={<Gauge className="w-5 h-5" />} label="Total" value={stats.total} tone="primary" />
         <KpiCard icon={<AlertCircle className="w-5 h-5" />} label="Vencidas" value={stats.vencidas} tone="overdue" />
         <KpiCard icon={<AlertTriangle className="w-5 h-5" />} label="Em atenção" value={stats.atencao} tone="warning" />
         <KpiCard icon={<CheckCircle2 className="w-5 h-5" />} label="Em dia" value={stats.emDia} tone="success" />
-        <div className="rounded-xl p-3 border border-border bg-card flex flex-col col-span-2 md:col-span-1">
+        <div className="kron-kpi kron-kpi__critical flex flex-col col-span-2 md:col-span-1">
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
             <Clock className="w-3.5 h-3.5" /> Mais crítica
           </div>
@@ -291,6 +300,8 @@ ${semPendentes
       </div>
 
       {/* Filtros */}
+      <div className="kron-filters">
+      <div className="kron-filters__title"><SlidersHorizontal size={16}/> Buscar e filtrar equipamentos</div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
         <div className="relative md:col-span-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -326,10 +337,12 @@ ${semPendentes
         </Select>
       </div>
 
-      <div className="flex justify-end mb-3">
+      <div className="flex justify-end mb-0">
         <Button onClick={baixarPDF} variant="default" size="sm" className="gap-2">
           <Download className="w-4 h-4" /> Baixar PDF
         </Button>
+      </div>
+
       </div>
 
       {/* Conteúdo */}
@@ -358,7 +371,7 @@ ${semPendentes
       ) : (
         <>
           {/* Desktop: tabela */}
-          <div className="hidden md:block rounded-xl border border-border bg-card overflow-x-auto">
+          <div className="kron-data-table hidden md:block rounded-xl border border-border bg-card overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -442,7 +455,7 @@ function KpiCard({ icon, label, value, tone }: { icon: React.ReactNode; label: s
     success: "bg-success/10 border-success/20 text-success",
   }[tone];
   return (
-    <div className={`rounded-xl p-3 border ${cls}`}>
+    <div className={`kron-kpi kron-kpi--${tone} rounded-xl p-3 border ${cls}`}>
       <div className="flex items-center gap-1.5 text-[11px] opacity-80 mb-1">{icon}<span>{label}</span></div>
       <div className="text-2xl font-bold tabular-nums">{value}</div>
     </div>
