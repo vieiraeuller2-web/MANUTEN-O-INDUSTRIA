@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { buscarLubrificacoesCriticas } from "@/lib/lubrificacao-critica";
+import { useNavigate } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -18,6 +21,8 @@ import {
   Loader2,
   RefreshCw,
   Wrench,
+  Droplets,
+  ArrowRight,
 } from "lucide-react";
 
 import PageHeader from "@/components/PageHeader";
@@ -176,6 +181,13 @@ function RankingBarChart({
 }
 
 export default function DashboardExecutivo() {
+  const navigate = useNavigate();
+  const lubrificacoes = useQuery({
+    queryKey: ["lubrificacoes", "criticas"],
+    queryFn: ({ signal }) => buscarLubrificacoesCriticas(signal),
+    staleTime: 60_000,
+    retry: 1,
+  });
   const [draft, setDraft] = useState<CommonFilters>(EMPTY_FILTERS);
   const [filters, setFilters] = useState<CommonFilters>(EMPTY_FILTERS);
 
@@ -215,6 +227,7 @@ export default function DashboardExecutivo() {
   };
 
   const refresh = () => {
+    void lubrificacoes.refetch();
     void operacional.refetch();
     void custo.refetch();
     void operacionalEquipamentos.refetch();
@@ -565,6 +578,44 @@ export default function DashboardExecutivo() {
               </CardContent>
             </Card>
           </div>
+
+          <Card className="kron-report-card mt-6 border-l-[3px] border-l-red-500/80">
+            <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base"><Droplets className="h-5 w-5 text-primary"/> Lubrificações mais atrasadas</CardTitle>
+                <p className="mt-2 text-xs text-muted-foreground">Prioridade por horas de atraso conforme o horímetro da planilha de lubrificação. Não representa dias corridos.</p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => navigate("/lubrificacao")} className="gap-2">Abrir lubrificação <ArrowRight className="h-4 w-4"/></Button>
+            </CardHeader>
+            <CardContent>
+              {lubrificacoes.isLoading ? (
+                <p className="py-5 text-sm text-muted-foreground">Consultando horímetros...</p>
+              ) : lubrificacoes.isError ? (
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-destructive">Não foi possível consultar os atrasos da lubrificação.</p>
+                  <Button size="sm" variant="outline" onClick={() => void lubrificacoes.refetch()}>Tentar novamente</Button>
+                </div>
+              ) : !lubrificacoes.data?.length ? (
+                <p className="py-5 text-sm text-muted-foreground">Nenhuma lubrificação com atraso mensurável nos registros consultados.</p>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {lubrificacoes.data.map((item, index) => (
+                    <div key={`${item.equipamento}-${index}`} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/20 px-4 py-3">
+                      <div className="min-w-0">
+                        <div className="mb-1 text-[10px] font-bold tracking-wider text-muted-foreground">PRIORIDADE {String(index + 1).padStart(2, "0")}</div>
+                        <p className="truncate text-sm font-semibold" title={item.equipamento}>{item.equipamento}</p>
+                        <p className="truncate text-xs text-muted-foreground">{item.setor || "Setor não informado"}</p>
+                      </div>
+                      <div className="shrink-0 rounded-lg bg-destructive/10 px-3 py-2 text-right text-destructive">
+                        <strong className="block text-lg font-bold tabular-nums">{item.horasAtraso.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} h</strong>
+                        <span className="text-[10px] font-semibold">em atraso</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <div className="mt-6 grid gap-4 xl:grid-cols-2">
             <RankingBarChart
