@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowUpRight, ChevronRight, CircleDot, LogOut, Plus, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ChevronRight, LogOut, Plus } from "lucide-react";
 import BottomNav, { allNavItems, type NavItem } from "@/components/BottomNav";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth, canAccessRoute } from "@/contexts/AuthContext";
+import { AvatarEditor, AvatarFace, DEFAULT_AVATAR, readAvatar, type AvatarSelection } from "@/components/AvatarEditor";
 import "./KronShell.css";
 
 function isSelected(pathname: string, path: string): boolean {
@@ -23,6 +24,11 @@ export default function KronShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, status, logout } = useAuth();
+  const [avatar, setAvatar] = useState<AvatarSelection>(DEFAULT_AVATAR);
+  const [editorOpen, setEditorOpen] = useState(false);
+  useEffect(() => {
+    setAvatar(user?.login ? readAvatar(user.login) : DEFAULT_AVATAR);
+  }, [user?.login]);
 
   // RequireAuth continua sendo a única barreira de acesso: o shell
   // não mostra navegação nem dados do usuário antes da autenticação.
@@ -60,14 +66,6 @@ export default function KronShell({ children }: { children: ReactNode }) {
           </span>
         </button>
 
-        <div className="kron-sidebar__context">
-          <div className="kron-sidebar__context-dot"><CircleDot size={16} /></div>
-          <div>
-            <span>AMBIENTE OPERACIONAL</span>
-            <strong>Manutenção industrial</strong>
-          </div>
-        </div>
-
         <div className="kron-sidebar__navigation">
           {menuGroups.map((group) => (
             <div className="kron-sidebar__group" key={group.title}>
@@ -97,7 +95,7 @@ export default function KronShell({ children }: { children: ReactNode }) {
 
         <div className="kron-sidebar__bottom">
           <div className="kron-sidebar__identity">
-            <span className="kron-sidebar__avatar">{(user.nome || user.login || "K").charAt(0).toUpperCase()}</span>
+            <button type="button" className="kron-sidebar__avatar kron-avatar-action" onClick={() => setEditorOpen(true)} title="Alterar avatar ou foto" aria-label="Personalizar meu avatar"><AvatarFace avatar={avatar}/></button>
             <span className="kron-sidebar__identity-text">
               <strong title={user.nome}>{user.nome || user.login}</strong>
               <small>{user.perfil}{user.unidade ? ` · ${user.unidade}` : ""}</small>
@@ -117,14 +115,13 @@ export default function KronShell({ children }: { children: ReactNode }) {
             <strong>{currentLabel}</strong>
           </div>
           <div className="kron-topbar__tools">
-            <span className="kron-topbar__auth"><ShieldCheck size={15} /> SESSÃO AUTENTICADA</span>
             {allowNewOS && (
               <button type="button" className="kron-topbar__new" onClick={() => navigate("/os/nova")}>
                 <Plus size={16}/><span>Nova ordem de serviço</span><ArrowUpRight size={14}/>
               </button>
             )}
             <ThemeToggle />
-            <span className="kron-topbar__avatar" title={user.nome || user.login}>{(user.nome || user.login || "K").charAt(0).toUpperCase()}</span>
+            <button type="button" className="kron-topbar__avatar kron-avatar-action" title="Alterar avatar ou foto" aria-label="Personalizar meu avatar" onClick={() => setEditorOpen(true)}><AvatarFace avatar={avatar} size={19}/></button>
           </div>
         </header>
 
@@ -133,6 +130,7 @@ export default function KronShell({ children }: { children: ReactNode }) {
         </main>
 
         <BottomNav />
+        <AvatarEditor open={editorOpen} onOpenChange={setEditorOpen} avatar={avatar} onSelect={setAvatar} login={user.login} name={user.nome || user.login} />
       </div>
     </div>
   );
