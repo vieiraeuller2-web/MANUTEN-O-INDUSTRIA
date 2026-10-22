@@ -15,7 +15,7 @@ import {
   achatarArvorePreventiva,
   formatarModalidadePlano,
   formatarPeriodicidadePlano,
-  formatarStatusPlano,
+  situacaoEfetivaPlano,
   obterItensFinaisPreventiva,
   valorEhNao,
 } from "@/components/preventivas/preventivas-utils";
@@ -162,7 +162,7 @@ export default function PlanosManutencao() {
     [planos],
   );
   const statusDisponiveis = useMemo(
-    () => uniqueSorted(planos.map((plano) => valorEhNao(plano.ativo) ? "INATIVO" : formatarStatusPlano(plano.status_plano))),
+    () => uniqueSorted(planos.map((plano) => situacaoEfetivaPlano(plano).status)),
     [planos],
   );
 
