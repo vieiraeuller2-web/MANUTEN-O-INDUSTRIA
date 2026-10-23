@@ -20,7 +20,7 @@ import "./Login.css";
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, status, user } = useAuth();
+  const { login, status, user, retrySession } = useAuth();
   const [userLogin, setUserLogin] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -95,6 +95,7 @@ export default function Login() {
           <h1>O controle da manutenção começa <em>aqui.</em></h1>
           <p className="kron-login__intro">Sua central de operação, rastreabilidade e gestão da manutenção industrial.</p>
 
+          {status === "verification-error" && <div role="alert" className="kron-login__session-warning"><strong>Não foi possível confirmar a sessão anterior.</strong><p>A verificação do AUTH62 está temporariamente indisponível. Tente novamente antes de fazer outro login.</p><button type="button" onClick={() => void retrySession()}>Verificar sessão novamente</button></div>}
           <form onSubmit={handleSubmit} className="kron-login__panel">
             <div className="kron-login__panel-head">
               <div>
