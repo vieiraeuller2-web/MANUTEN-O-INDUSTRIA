@@ -84,3 +84,5 @@
 }
 .kron-login__panel{box-shadow:0 24px 90px rgba(0,0,0,.64),0 0 45px rgba(128,29,46,.07),inset 0 1px 0 rgba(255,255,255,.08)}
 @media(max-width:850px){.kron-login__media:after{background:linear-gradient(90deg,rgba(4,7,12,.81),rgba(4,7,12,.73)),linear-gradient(0deg,rgba(3,5,9,.78),transparent 74%)}}
+
+.kron-login__session-warning{max-width:500px;margin:0 0 16px;padding:16px 18px;background:rgba(168,98,30,.18);border:1px solid rgba(239,175,82,.48);border-radius:12px;color:#ffe6bf;font-size:12px;line-height:1.6}.kron-login__session-warning strong{font-size:13px}.kron-login__session-warning p{margin:6px 0 11px}.kron-login__session-warning button{border:1px solid rgba(243,189,114,.5);padding:8px 12px;border-radius:8px;font-weight:700}.kron-login__session-warning button:hover{background:rgba(243,189,114,.15)}
