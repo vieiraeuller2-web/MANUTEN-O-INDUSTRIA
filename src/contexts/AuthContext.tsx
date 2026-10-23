@@ -12,6 +12,7 @@ import {
   apiGetMe,
   apiLogin,
   apiLogout,
+  SessionVerificationError,
   type AuthUser,
   type Perfil,
 } from "@/lib/api-client";
@@ -20,12 +21,13 @@ import {
 
 interface AuthState {
   user: AuthUser | null;
-  status: "loading" | "authenticated" | "unauthenticated";
+  status: "loading" | "authenticated" | "unauthenticated" | "verification-error";
 }
 
 interface AuthContextValue extends AuthState {
   login: (user: string, senha: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
+  retrySession: () => Promise<void>;
   /** Verifica se o usuário possui pelo menos um dos perfis */
   hasPerfil: (...perfis: Perfil[]) => boolean;
 }
@@ -59,29 +61,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     status: "loading",
   });
 
-  // Verifica sessão ao montar
-  useEffect(() => {
-    let mounted = true;
-
-    apiGetMe().then((user) => {
-      if (!mounted) return;
-      if (user) {
-        setState({ user, status: "authenticated" });
-      } else {
-        setState({ user: null, status: "unauthenticated" });
+  const retrySession = useCallback(async () => {
+    setState({ user: null, status: "loading" });
+    try {
+      const user = await apiGetMe();
+      setState(user
+        ? { user, status: "authenticated" }
+        : { user: null, status: "unauthenticated" });
+    } catch (error) {
+      if (error instanceof SessionVerificationError) {
+        setState({ user: null, status: "verification-error" });
+        return;
       }
-    });
+      setState({ user: null, status: "verification-error" });
+    }
+  }, []);
 
-    // Escuta evento de sessão expirada do api-client
+  useEffect(() => {
+    let active = true;
+    const bootstrap = async () => {
+      // Falhas temporárias nunca transformam uma sessão não verificada em logout.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const user = await apiGetMe();
+          if (active) setState(user
+            ? { user, status: "authenticated" }
+            : { user: null, status: "unauthenticated" });
+          return;
+        } catch {
+          if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 600));
+        }
+      }
+      if (active) setState({ user: null, status: "verification-error" });
+    };
+    void bootstrap();
+
     function handleExpired() {
-      if (!mounted) return;
+      if (!active) return;
       setState({ user: null, status: "unauthenticated" });
       queryClient.clear();
     }
-
     window.addEventListener("cmi:session-expired", handleExpired);
     return () => {
-      mounted = false;
+      active = false;
       window.removeEventListener("cmi:session-expired", handleExpired);
     };
   }, [queryClient]);
@@ -114,9 +136,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ...state,
       login,
       logout,
+      retrySession,
       hasPerfil,
     }),
-    [state, login, logout, hasPerfil]
+    [state, login, logout, retrySession, hasPerfil]
   );
 
   return (
