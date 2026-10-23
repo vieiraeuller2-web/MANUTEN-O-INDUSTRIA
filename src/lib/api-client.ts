@@ -62,29 +62,63 @@ export async function apiLogin(
   };
 }
 
+/**
+ * 401 significa sessão ausente/inválida. Erros 403/429/5xx, indisponibilidade
+ * de rede ou resposta malformada NÃO significam logout: a verificação falhou.
+ * O estado da interface permanece fechado até o AUTH62 confirmar.
+ */
+export class SessionVerificationError extends Error {
+  constructor(
+    message = "Não foi possível validar a sessão agora. Verifique a conexão e tente novamente.",
+    readonly httpStatus?: number,
+  ) {
+    super(message);
+    this.name = "SessionVerificationError";
+  }
+}
+
 export async function apiGetMe(): Promise<AuthUser | null> {
+  let res: Response;
   try {
-    const res = await fetch(`${API_BASE}/auth/me`, {
+    res = await fetch(`${API_BASE}/auth/me`, {
       method: "GET",
       credentials: "include",
+      cache: "no-store",
     });
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    if (!data.authenticated) return null;
-
-    return {
-      authenticated: true,
-      perfil: data.perfil,
-      nome: data.nome,
-      login: data.login,
-      unidade: data.unidade,
-      permissoes: data.permissoes || [],
-    };
   } catch {
-    return null;
+    throw new SessionVerificationError();
   }
+
+  if (res.status === 401) return null;
+  if (!res.ok) throw new SessionVerificationError(undefined, res.status);
+
+  let data: Record<string, unknown>;
+  try {
+    data = await res.json() as Record<string, unknown>;
+  } catch {
+    throw new SessionVerificationError("Resposta inválida ao verificar a sessão.", res.status);
+  }
+
+  if (!data || typeof data !== "object" || data.authenticated !== true) {
+    throw new SessionVerificationError("AUTH62 não confirmou a sessão.", res.status);
+  }
+
+  if (
+    !["ADM", "PCM", "GESTAO", "TECNICO"].includes(String(data.perfil)) ||
+    typeof data.login !== "string" ||
+    !data.login.trim()
+  ) {
+    throw new SessionVerificationError("Resposta de usuário incompleta do AUTH62.", res.status);
+  }
+
+  return {
+    authenticated: true,
+    perfil: data.perfil as Perfil,
+    nome: typeof data.nome === "string" ? data.nome : "",
+    login: data.login,
+    unidade: typeof data.unidade === "string" ? data.unidade : "",
+    permissoes: Array.isArray(data.permissoes) ? data.permissoes as Permissao[] : [],
+  };
 }
 
 export async function apiLogout(): Promise<void> {
