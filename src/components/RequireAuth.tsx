@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import { useAuth, canAccessRoute } from "@/contexts/AuthContext";
 
 /**
@@ -20,7 +20,7 @@ interface RequireAuthProps {
 }
 
 export default function RequireAuth({ children }: RequireAuthProps) {
-  const { user, status } = useAuth();
+  const { user, status, retrySession } = useAuth();
   const location = useLocation();
 
   if (status === "loading") {
@@ -29,6 +29,10 @@ export default function RequireAuth({ children }: RequireAuthProps) {
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (status === "verification-error") {
+    return <div className="min-h-screen flex items-center justify-center p-5"><div className="max-w-md rounded-xl border bg-card p-7 text-center space-y-4"><ShieldAlert className="mx-auto text-primary" size={30}/><h1 className="text-lg font-bold">Não foi possível verificar a sessão</h1><p className="text-sm text-muted-foreground">O serviço de autenticação está temporariamente indisponível. Seu acesso permanece bloqueado até confirmação do AUTH62. Não é necessário digitar sua senha novamente.</p><button type="button" className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-primary-foreground font-semibold" onClick={() => void retrySession()}><RefreshCw size={16}/> Tentar novamente</button></div></div>;
   }
 
   // Não autenticado → login
