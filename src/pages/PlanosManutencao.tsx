@@ -17,7 +17,6 @@ import {
   formatarPeriodicidadePlano,
   situacaoEfetivaPlano,
   obterItensFinaisPreventiva,
-  valorEhNao,
 } from "@/components/preventivas/preventivas-utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -171,7 +170,7 @@ export default function PlanosManutencao() {
     () => planos.filter((plano) => {
       const modalidade = formatarModalidadePlano(plano);
       const periodicidade = formatarPeriodicidadePlano(plano);
-      const status = valorEhNao(plano.ativo) ? "INATIVO" : formatarStatusPlano(plano.status_plano);
+      const status = situacaoEfetivaPlano(plano).status;
       if (filtros.modalidade !== TODOS_FILTRO && modalidade !== filtros.modalidade) return false;
       if (filtros.periodicidade !== TODOS_FILTRO && periodicidade !== filtros.periodicidade) return false;
       if (filtros.status !== TODOS_FILTRO && status !== filtros.status) return false;
