@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -56,19 +57,23 @@ export type { Perfil } from "@/lib/api-client";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const sessionGeneration = useRef(0);
   const [state, setState] = useState<AuthState>({
     user: null,
     status: "loading",
   });
 
   const retrySession = useCallback(async () => {
+    const generation = ++sessionGeneration.current;
     setState({ user: null, status: "loading" });
     try {
       const user = await apiGetMe();
+      if (generation !== sessionGeneration.current) return;
       setState(user
         ? { user, status: "authenticated" }
         : { user: null, status: "unauthenticated" });
     } catch (error) {
+      if (generation !== sessionGeneration.current) return;
       if (error instanceof SessionVerificationError) {
         setState({ user: null, status: "verification-error" });
         return;
@@ -79,12 +84,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    const generation = ++sessionGeneration.current;
     const bootstrap = async () => {
       // Falhas temporárias nunca transformam uma sessão não verificada em logout.
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           const user = await apiGetMe();
-          if (active) setState(user
+          if (active && generation === sessionGeneration.current) setState(user
             ? { user, status: "authenticated" }
             : { user: null, status: "unauthenticated" });
           return;
@@ -92,12 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 600));
         }
       }
-      if (active) setState({ user: null, status: "verification-error" });
+      if (active && generation === sessionGeneration.current) setState({ user: null, status: "verification-error" });
     };
     void bootstrap();
 
     function handleExpired() {
       if (!active) return;
+      ++sessionGeneration.current;
       setState({ user: null, status: "unauthenticated" });
       queryClient.clear();
     }
@@ -111,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (user: string, senha: string) => {
       const authUser = await apiLogin(user, senha);
+      ++sessionGeneration.current;
       setState({ user: authUser, status: "authenticated" });
       return authUser;
     },
@@ -118,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    ++sessionGeneration.current;
     await apiLogout();
     queryClient.clear(); // limpa caches protegidos
     setState({ user: null, status: "unauthenticated" });
