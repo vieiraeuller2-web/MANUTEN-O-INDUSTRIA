@@ -11,6 +11,10 @@ import {
 } from "../../api/_shared/gas-client";
 
 describe("resolveGASMethodForAction", () => {
+  it("mantém auth_me em POST para que token não apareça em query string", () => {
+    expect(resolveGASMethodForAction("auth_me")).toBe("POST");
+  });
+
   it("usa GET para endpoints KPI homologados como leitura", () => {
     expect(resolveGASMethodForAction("kpi_operacional_resumo")).toBe("GET");
     expect(resolveGASMethodForAction("kpi_hh_custo_resumo")).toBe("GET");
