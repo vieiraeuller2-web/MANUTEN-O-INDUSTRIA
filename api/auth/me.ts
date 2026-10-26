@@ -5,6 +5,7 @@ import {
   getSessionFromCookies,
   clearSessionCookie,
 } from "../_shared/gas-client.js";
+import { diagnosticarFalhaAuthMe } from "../_shared/auth-me-diagnostics.js";
 
 /**
  * GET /api/auth/me
@@ -62,10 +63,8 @@ export default async function handler(
 
       // Distingue falhas de comunicação de falhas no contrato auth_me.
       // Nenhuma mensagem bruta, token, cookie ou identidade aparece no log/resposta.
-      const reason = /timeout/i.test(message) ? "GAS_TIMEOUT" :
-        /resposta inv[aá]lida/i.test(message) ? "GAS_INVALID_RESPONSE" :
-        "AUTH62_NOT_CONFIRMED";
-      console.warn(`[auth/me][diagnostico] etapa=auth62_nao_confirmou motivo=${reason} codigo=${typeof gasResponse.code === "number" ? gasResponse.code : "indefinido"}`);
+      const { motivo: reason, categoria, campos } = diagnosticarFalhaAuthMe(gasResponse);
+      console.warn(`[auth/me][diagnostico] etapa=auth62_nao_confirmou motivo=${reason} categoria=${categoria} campos=${campos} codigo=${typeof gasResponse.code === "number" ? gasResponse.code : "indefinido"}`);
       return res.status(503).json({
         authenticated: false,
         message: "Não foi possível validar a sessão",
