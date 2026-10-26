@@ -18,6 +18,9 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
+  // Resposta de sessão nunca deve ser armazenada por navegador ou CDN.
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  res.setHeader("Vary", "Cookie");
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
@@ -45,16 +48,29 @@ export default async function handler(
     });
 
     if (!gasResponse.success) {
-      // O GAS também usa success=false para timeouts e erros de infraestrutura.
-      // Não registrar mensagem bruta nem invalidar o cookie sem confirmação de revogação.
-      const authRejected = gasResponse.code === 401;
-      console.warn(`[auth/me][diagnostico] etapa=${authRejected ? "auth62_rejeitou" : "auth62_nao_confirmou"} codigo=${typeof gasResponse.code === "number" ? gasResponse.code : "indefinido"}`);
-      if (!authRejected) {
-        return res.status(503).json({ authenticated: false, message: "Não foi possível validar a sessão" });
+      // O AUTH62 pode recusar tokens com message sem enviar code=401.
+      // Apenas os motivos explícitos de sessão revogada/expirada recebem 401.
+      const message = typeof gasResponse.message === "string" ? gasResponse.message.trim() : "";
+      const invalidSession = gasResponse.code === 401 ||
+        /^(?:SESSION_INVALID|SESSION_EXPIRED|TOKEN_INVALID|TOKEN_EXPIRED|USER_INACTIVE)$/i.test(message) ||
+        /^(?:sess[aã]o (?:inv[aá]lida|expirada|inativa|revogada)|token (?:inv[aá]lido|expirado))$/i.test(message);
+      if (invalidSession) {
+        console.warn("[auth/me][diagnostico] etapa=auth62_rejeitou");
+        res.setHeader("Set-Cookie", clearSessionCookie());
+        return res.status(401).json({ authenticated: false });
       }
-      // Sessão explicitamente rejeitada pelo backend
-      res.setHeader("Set-Cookie", clearSessionCookie());
-      return res.status(401).json({ authenticated: false });
+
+      // Distingue falhas de comunicação de falhas no contrato auth_me.
+      // Nenhuma mensagem bruta, token, cookie ou identidade aparece no log/resposta.
+      const reason = /timeout/i.test(message) ? "GAS_TIMEOUT" :
+        /resposta inv[aá]lida/i.test(message) ? "GAS_INVALID_RESPONSE" :
+        "AUTH62_NOT_CONFIRMED";
+      console.warn(`[auth/me][diagnostico] etapa=auth62_nao_confirmou motivo=${reason} codigo=${typeof gasResponse.code === "number" ? gasResponse.code : "indefinido"}`);
+      return res.status(503).json({
+        authenticated: false,
+        message: "Não foi possível validar a sessão",
+        reason,
+      });
     }
 
     // Retorna dados atualizados (backend é a fonte de verdade).
@@ -81,6 +97,7 @@ export default async function handler(
     return res.status(503).json({
       authenticated: false,
       message: "Não foi possível validar a sessão",
+      reason: "GAS_COMMUNICATION_ERROR",
     });
   }
 }
