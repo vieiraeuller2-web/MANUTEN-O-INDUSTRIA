@@ -101,6 +101,9 @@ export const ALLOWED_ACTIONS = new Set([
 
 // Actions de leitura que podem ser reenviadas com segurança
 const READ_ACTIONS = new Set([
+  // A leitura da própria sessão é feita por POST para não expor o token na URL.
+  // Após o patch correspondente no doPost do GAS, redirects podem ser seguidos.
+  "auth_me",
   "listar_os_paginado",
   "opcoes_formulario_os",
   "equipe_colaboradores",
