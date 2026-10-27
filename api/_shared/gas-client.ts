@@ -227,7 +227,7 @@ export async function callGAS(
     try {
       return JSON.parse(text) as GASResponse;
     } catch {
-      console.error("[GAS] Resposta não-JSON:", text.slice(0, 500));
+      // Não registrar corpo bruto: páginas de erro podem conter dados sensíveis.\n      console.error("[GAS] Resposta não-JSON recebida do backend");
       return { success: false, message: "Resposta inválida do servidor" };
     }
   } catch (err: unknown) {
