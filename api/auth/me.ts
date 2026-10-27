@@ -86,7 +86,13 @@ export default async function handler(
       nome: gasUsuario.nome || gasResponse.nome || session.nome,
       login: gasUsuario.login || gasResponse.login || session.login,
       unidade: gasUsuario.unidade || gasResponse.unidade || session.unidade,
-      permissoes: gasResponse.permissoes || session.permissoes || [],
+      // Permissões precisam vir da validação ATUAL do AUTH62. Nunca
+      // restaurar privilégios antigos a partir do cookie de login.
+      permissoes: Array.isArray(gasResponse.permissoes)
+        ? gasResponse.permissoes
+        : Array.isArray(gasUsuario.permissoes)
+          ? gasUsuario.permissoes
+          : [],
     });
   } catch {
     console.error("[auth/me][diagnostico] etapa=falha_comunicacao");
