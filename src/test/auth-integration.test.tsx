@@ -257,6 +257,56 @@ describe("canAccessRoute - Nova Lógica Baseada em Módulos (authz)", () => {
   });
 });
 
+describe("Regressão de permissões por perfil após F5", () => {
+  const usuario = (perfil: Perfil, permissoes: Permissao[]) => ({
+    authenticated: true as const, perfil, nome: "Teste", login: "teste",
+    unidade: "MATRIZ", permissoes,
+  });
+
+  it("nega navegação de usuário sem sessão, mesmo em rota privilegiada", () => {
+    expect(canAccessRoute(null, "/equipe")).toBe(false);
+    expect(canAccessRoute(null, "/relatorios")).toBe(false);
+  });
+
+  it("bloqueia ações mesmo que exista permissão de visualização", () => {
+    const pcm = usuario("PCM", [
+      { modulo: "HISTORICO", visualizar: true, editar: false },
+      { modulo: "LANCAMENTO", visualizar: true, criar: false },
+    ]);
+    expect(canAccessRoute(pcm, "/os/123")).toBe(true);
+    expect(canAccessRoute(pcm, "/os/123/editar")).toBe(false);
+    expect(canAccessRoute(pcm, "/os/nova")).toBe(false);
+  });
+
+  it("GESTAO somente acessa módulos explicitamente recebidos", () => {
+    const gestao = usuario("GESTAO", [
+      { modulo: "DASH_COMPLETO", visualizar: true },
+      { modulo: "LUBRIFICACAO", visualizar: true },
+    ]);
+    expect(canAccessRoute(gestao, "/relatorios")).toBe(true);
+    expect(canAccessRoute(gestao, "/equipe")).toBe(false);
+    expect(canAccessRoute(gestao, "/planos-manutencao")).toBe(false);
+  });
+
+  it("TECNICO sem criar não abre OS manual e não ganha privilégio por perfil", () => {
+    const tecnico = usuario("TECNICO", [
+      { modulo: "MINHAS_OS", visualizar: true },
+      { modulo: "OS_MANUAL", visualizar: true, criar: false },
+    ]);
+    expect(canAccessRoute(tecnico, "/tecnico")).toBe(true);
+    expect(canAccessRoute(tecnico, "/tecnico/nova")).toBe(false);
+    expect(canAccessRoute(tecnico, "/equipe")).toBe(false);
+  });
+
+  it("regra wildcard negativa prevalece sobre permissão específica positiva", () => {
+    const pcm = usuario("PCM", [
+      { modulo: "*", visualizar: false },
+      { modulo: "HISTORICO", visualizar: true },
+    ]);
+    expect(canAccessRoute(pcm, "/os")).toBe(false);
+  });
+});
+
 describe("RequireAuth (Autorização Central)", () => {
   it("RequireAuth bloqueia rotas se não tiver permissão", async () => {
     vi.mocked(apiClient.apiGetMe).mockResolvedValue({
