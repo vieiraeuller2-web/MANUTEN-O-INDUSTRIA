@@ -1,4 +1,6 @@
 import { FormEvent, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { periodoOSManualValido } from "@/lib/tecnico-os-validation";
 import { CheckCircle2, Loader2, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
@@ -8,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormOptionsOS } from "@/hooks/use-form-options-os";
 import { registrarOSManualTecnico } from "@/lib/tecnico-api";
+import { tecnicoQueryKeys } from "@/hooks/use-tecnico";
 import { toast } from "@/hooks/use-toast";
 
 interface FormState {
@@ -38,6 +41,7 @@ function initialForm(): FormState {
 
 export default function TecnicoNovaOS() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: options, isLoading: loadingOptions } = useFormOptionsOS();
   const [form, setForm] = useState<FormState>(() => initialForm());
   const [saving, setSaving] = useState(false);
@@ -96,10 +100,10 @@ export default function TecnicoNovaOS() {
       return;
     }
 
-    if (form.data_conclusao < form.data_inicio) {
+    if (!periodoOSManualValido(form.data_inicio, form.hora_inicio, form.data_conclusao, form.hora_conclusao)) {
       toast({
         title: "Período inválido.",
-        description: "A conclusão não pode ser anterior ao início.",
+        description: "Confira datas e horas. A conclusão não pode ser anterior ao início.",
         variant: "destructive",
       });
       return;
@@ -111,6 +115,7 @@ export default function TecnicoNovaOS() {
 
     try {
       const result = await registrarOSManualTecnico(form);
+      await queryClient.invalidateQueries({ queryKey: tecnicoQueryKeys.raiz });
       const id = result.id_os || result.numero_os || "";
       setSavedId(id);
       setForm(initialForm());
