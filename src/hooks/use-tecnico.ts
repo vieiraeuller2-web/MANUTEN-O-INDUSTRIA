@@ -8,6 +8,7 @@ const TECNICO_GC_TIME = 5 * 60_000;
 const PAGE_SIZE = 50;
 
 export const tecnicoQueryKeys = {
+  raiz: ["tecnico", "minhas-os"] as const,
   minhasOS: (filters: Omit<TecnicoMinhasOSParams, "page" | "page_size"> = {}) =>
     ["tecnico", "minhas-os", filters] as const,
 };
