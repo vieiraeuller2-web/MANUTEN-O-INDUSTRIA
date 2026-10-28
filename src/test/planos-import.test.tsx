@@ -12,5 +12,5 @@ describe("Planos de Manutenção — carregamento do módulo", () => {
   it("importa sem depender do Supabase legado", async () => {
     const modulo = await import("@/pages/PlanosManutencao");
     expect(typeof modulo.default).toBe("function");
-  });
+  }, 15_000); // Importação com Vite/SWC pode exceder 5s sob carga no Windows.
 });
