@@ -7,6 +7,8 @@ import {
   criarEquipeTecnico,
   fetchEquipeAcessos,
   criarEquipeAcesso,
+  alterarStatusEquipeAcesso,
+  redefinirSenhaEquipeAcesso,
 } from "@/lib/equipe-api";
 
 const EQUIPE_STALE_TIME = 60_000;
@@ -108,6 +110,29 @@ export function useCriarEquipeAcesso() {
         queryClient.invalidateQueries({ queryKey: equipeQueryKeys.tecnicos }),
         queryClient.invalidateQueries({ queryKey: equipeQueryKeys.colaboradores }),
       ]);
+    },
+  });
+}
+
+export function useAlterarStatusEquipeAcesso() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: alterarStatusEquipeAcesso,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: equipeQueryKeys.acessos }),
+        queryClient.invalidateQueries({ queryKey: equipeQueryKeys.tecnicos }),
+      ]);
+    },
+  });
+}
+
+export function useRedefinirSenhaEquipeAcesso() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: redefinirSenhaEquipeAcesso,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: equipeQueryKeys.acessos });
     },
   });
 }
