@@ -7,6 +7,7 @@ import {
   validateOrigin,
   ALLOWED_ACTIONS,
 } from "./_shared/gas-client.js";
+import { sessaoRejeitadaPeloAUTH62 } from "./_shared/auth62-session-status.js";
 
 /**
  * POST /api/proxy
@@ -75,7 +76,7 @@ export default async function handler(
     });
 
     // Se GAS indicar sessão inválida, limpa cookie
-    if (gasResponse.code === 401 || gasResponse.message?.includes("Sessão inválida")) {
+    if (sessaoRejeitadaPeloAUTH62(gasResponse)) {
       res.setHeader("Set-Cookie", clearSessionCookie());
       return res.status(401).json({ success: false, message: "Sessão expirada" });
     }
