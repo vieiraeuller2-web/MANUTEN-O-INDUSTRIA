@@ -6,6 +6,7 @@ import {
   clearSessionCookie,
 } from "../_shared/gas-client.js";
 import { diagnosticarFalhaAuthMe } from "../_shared/auth-me-diagnostics.js";
+import { sessaoRejeitadaPeloAUTH62 } from "../_shared/auth62-session-status.js";
 
 /**
  * GET /api/auth/me
@@ -51,10 +52,7 @@ export default async function handler(
     if (!gasResponse.success) {
       // O AUTH62 pode recusar tokens com message sem enviar code=401.
       // Apenas os motivos explícitos de sessão revogada/expirada recebem 401.
-      const message = typeof gasResponse.message === "string" ? gasResponse.message.trim() : "";
-      const invalidSession = gasResponse.code === 401 ||
-        /^(?:SESSION_INVALID|SESSION_EXPIRED|TOKEN_INVALID|TOKEN_EXPIRED|USER_INACTIVE)$/i.test(message) ||
-        /^(?:sess[aã]o (?:inv[aá]lida|expirada|inativa|revogada)|token (?:inv[aá]lido|expirado))$/i.test(message);
+      const invalidSession = sessaoRejeitadaPeloAUTH62(gasResponse);
       if (invalidSession) {
         console.warn("[auth/me][diagnostico] etapa=auth62_rejeitou");
         res.setHeader("Set-Cookie", clearSessionCookie());
