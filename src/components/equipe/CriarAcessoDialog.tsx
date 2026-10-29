@@ -43,9 +43,9 @@ export default function CriarAcessoDialog({
 }: CriarAcessoDialogProps) {
   const criarAcesso = useCriarEquipeAcesso();
   const perfisDisponiveis: PerfilAcessoEquipe[] = ["TECNICO", "PCM", "GESTAO", "ADM"];
-  const perfilPermitido = perfilSolicitante === "ADM" || perfil === "TECNICO";
 
   const [perfil, setPerfil] = useState<PerfilAcessoEquipe>("TECNICO");
+  const perfilPermitido = perfilSolicitante === "ADM" || perfil === "TECNICO";
   const [login, setLogin] = useState("");
   const [senha, setSenha] = useState("");
   const [unidade, setUnidade] = useState(unidadePadrao || "TH30");
