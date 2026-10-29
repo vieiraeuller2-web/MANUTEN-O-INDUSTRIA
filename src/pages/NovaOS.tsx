@@ -13,6 +13,9 @@ import { useSavePaginatedOS } from "@/hooks/use-paginated-os";
 import { useAuth } from "@/contexts/AuthContext";
 import { normalizeText, safeString } from "@/lib/data-helpers";
 import { cn } from "@/lib/utils";
+import ResponsavelField from "@/components/ResponsavelField";
+import { useEquipeColaboradores } from "@/hooks/use-equipe";
+import { combinarResponsaveis } from "@/lib/responsaveis-os";
 
 interface FormData {
   equipamento: string;
@@ -114,9 +117,6 @@ function validate(form: FormData, options: SelectOptions): FormErrors {
   }
   if (!isListedValue(form.area, options.areas)) {
     errors.area = "Selecione uma área da lista";
-  }
-  if (!isListedValue(form.responsavel, options.responsaveis)) {
-    errors.responsavel = "Selecione um responsável da lista";
   }
   if (!isListedValue(form.tipo, options.tipos)) {
     errors.tipo = "Selecione um tipo da lista";
@@ -343,6 +343,7 @@ export default function NovaOS() {
   const unidade = user?.unidade || "";
 
   const { data: optionsData, isLoading: isLoadingOptions } = useFormOptionsOS();
+  const { data: equipeData } = useEquipeColaboradores();
   const mutation = useSavePaginatedOS(userId, unidade, {});
 
   const [form, setForm] = useState<FormData>(() => initialForm());
@@ -363,6 +364,13 @@ export default function NovaOS() {
       tipos: optionsData.tipos || [],
     };
   }, [optionsData]);
+
+  const responsaveisDisponiveis = useMemo(() => combinarResponsaveis(
+    options.responsaveis,
+    (equipeData?.colaboradores ?? [])
+      .filter((p) => String(p.ativo).trim().toUpperCase() === "SIM")
+      .map((p) => p.nome_bd || p.nome),
+  ), [options.responsaveis, equipeData]);
 
   const setField = useCallback((field: FormField, value: string) => {
     setSaved(false);
@@ -515,14 +523,11 @@ export default function NovaOS() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <SearchableLockedSelectField
-              label="Responsável"
-              field="responsavel"
+            <ResponsavelField
               value={form.responsavel}
-              options={options.responsaveis}
+              options={responsaveisDisponiveis}
               error={errors.responsavel}
-              onChange={setField}
-              required
+              onChange={(valor) => setField("responsavel", valor)}
               disabled={isLoadingOptions}
             />
             <SearchableLockedSelectField
