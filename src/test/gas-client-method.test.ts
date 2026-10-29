@@ -63,9 +63,17 @@ describe("ALLOWED_ACTIONS técnico/equipe", () => {
     expect(resolveGASMethodForAction("equipe_tecnico_redefinir_senha")).toBe("POST");
   });
 
-  it("mantém fora da whitelist as actions genéricas de acesso ainda não homologadas", () => {
-    expect(ALLOWED_ACTIONS.has("equipe_acesso_status")).toBe(false);
-    expect(ALLOWED_ACTIONS.has("equipe_acesso_redefinir_senha")).toBe(false);
+  it("libera apenas as novas actions de gestão de acesso previstas no contrato AUTH62 via POST", () => {
+    expect(ALLOWED_ACTIONS.has("equipe_acesso_status")).toBe(true);
+    expect(ALLOWED_ACTIONS.has("equipe_acesso_redefinir_senha")).toBe(true);
+    expect(resolveGASMethodForAction("equipe_acesso_status")).toBe("POST");
+    expect(resolveGASMethodForAction("equipe_acesso_redefinir_senha")).toBe("POST");
+  });
+
+  it("mantém operações não homologadas fora da whitelist", () => {
+    expect(ALLOWED_ACTIONS.has("equipe_acesso_excluir")).toBe(false);
+    expect(ALLOWED_ACTIONS.has("equipe_acesso_alterar_perfil")).toBe(false);
+    expect(ALLOWED_ACTIONS.has("equipe_colaborador_excluir")).toBe(false);
   });
 
   it("alinha o cookie Vercel ao TTL de 12h do AUTH62", () => {
