@@ -42,10 +42,8 @@ export default function CriarAcessoDialog({
   unidadePadrao = "TH30",
 }: CriarAcessoDialogProps) {
   const criarAcesso = useCriarEquipeAcesso();
-  const perfisDisponiveis: PerfilAcessoEquipe[] =
-    perfilSolicitante === "ADM"
-      ? ["TECNICO", "PCM", "GESTAO", "ADM"]
-      : ["TECNICO"];
+  const perfisDisponiveis: PerfilAcessoEquipe[] = ["TECNICO", "PCM", "GESTAO", "ADM"];
+  const perfilPermitido = perfilSolicitante === "ADM" || perfil === "TECNICO";
 
   const [perfil, setPerfil] = useState<PerfilAcessoEquipe>("TECNICO");
   const [login, setLogin] = useState("");
@@ -62,7 +60,7 @@ export default function CriarAcessoDialog({
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!colaborador) return;
+    if (!colaborador || !perfilPermitido) return;
 
     try {
       await criarAcesso.mutateAsync({
@@ -114,12 +112,17 @@ export default function CriarAcessoDialog({
               </SelectTrigger>
               <SelectContent>
                 {perfisDisponiveis.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {item}
+                  <SelectItem key={item} value={item} disabled={perfilSolicitante !== "ADM" && item !== "TECNICO"}>
+                    {item}{perfilSolicitante !== "ADM" && item !== "TECNICO" ? " — somente ADM" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {perfilSolicitante !== "ADM" && (
+              <p className="text-xs text-muted-foreground">
+                Todos os perfis são exibidos. Por segurança, somente ADM pode criar acessos PCM, GESTAO ou ADM.
+              </p>
+            )}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -176,6 +179,7 @@ export default function CriarAcessoDialog({
               type="submit"
               disabled={
                 criarAcesso.isPending ||
+                !perfilPermitido ||
                 !colaborador ||
                 !login.trim() ||
                 senha.length < 8 ||
