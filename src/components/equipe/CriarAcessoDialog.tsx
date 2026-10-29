@@ -11,13 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { useCriarEquipeAcesso } from "@/hooks/use-equipe";
 import type {
@@ -101,23 +94,25 @@ export default function CriarAcessoDialog({
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-2">
             <Label>Perfil *</Label>
-            <Select
-              value={perfil}
-              onValueChange={(value) =>
-                setPerfil(value as PerfilAcessoEquipe)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {perfisDisponiveis.map((item) => (
-                  <SelectItem key={item} value={item} disabled={perfilSolicitante !== "ADM" && item !== "TECNICO"}>
-                    {item}{perfilSolicitante !== "ADM" && item !== "TECNICO" ? " — somente ADM" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div role="group" aria-label="Perfil do novo login" className="grid grid-cols-2 gap-2">
+              {perfisDisponiveis.map((item) => {
+                const bloqueado = perfilSolicitante !== "ADM" && item !== "TECNICO";
+                return (
+                  <Button
+                    key={item}
+                    type="button"
+                    variant={perfil === item ? "default" : "outline"}
+                    aria-pressed={perfil === item}
+                    disabled={bloqueado || criarAcesso.isPending}
+                    onClick={() => setPerfil(item)}
+                    className="w-full"
+                    title={bloqueado ? "Somente um administrador pode criar este perfil" : undefined}
+                  >
+                    {item}
+                  </Button>
+                );
+              })}
+            </div>
             {perfilSolicitante !== "ADM" && (
               <p className="text-xs text-muted-foreground">
                 Todos os perfis são exibidos. Por segurança, somente ADM pode criar acessos PCM, GESTAO ou ADM.
