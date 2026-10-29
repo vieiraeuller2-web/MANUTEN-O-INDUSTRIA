@@ -79,6 +79,7 @@ export function useCriarEquipeTecnico() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: equipeQueryKeys.colaboradores }),
         queryClient.invalidateQueries({ queryKey: equipeQueryKeys.tecnicos }),
+        queryClient.invalidateQueries({ queryKey: equipeQueryKeys.acessos }),
       ]);
     },
   });
