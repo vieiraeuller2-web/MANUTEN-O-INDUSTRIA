@@ -64,7 +64,7 @@ export default function Equipe() {
 
   const colaboradores = colaboradoresQuery.data?.colaboradores ?? [];
   const acessosConfirmados = acessosQuery.isSuccess && Array.isArray(acessosQuery.data?.acessos);
-  const acessos = acessosConfirmados ? acessosQuery.data.acessos : [];
+  const acessos = acessosConfirmados ? (acessosQuery.data?.acessos ?? []) : [];
   const acessosPorColaborador = useMemo(() => agruparAcessosPorColaborador(acessos), [acessos]);
   const filtrados = useMemo(() => filtrarEquipe(colaboradores, acessosPorColaborador, {
     busca,
