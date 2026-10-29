@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { KeyRound, Loader2, Plus, RefreshCw, Search, UserPlus, Users } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import CriarAcessoDialog from "@/components/equipe/CriarAcessoDialog";
+import GerenciarAcessoDialog from "@/components/equipe/GerenciarAcessoDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,7 +18,7 @@ import {
 } from "@/hooks/use-equipe";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessModule } from "@/lib/authz";
-import type { EquipeColaborador } from "@/lib/equipe-contract";
+import type { EquipeColaborador, EquipeAcessoResumo } from "@/lib/equipe-contract";
 import { agruparAcessosPorColaborador, filtrarEquipe, type FiltroAcesso, type FiltroSituacao } from "@/lib/equipe-view";
 
 type FormBase = {
@@ -45,6 +46,8 @@ export default function Equipe() {
   const [dialogTecnico, setDialogTecnico] = useState(false);
   const [dialogAcesso, setDialogAcesso] = useState(false);
   const [colaboradorAcesso, setColaboradorAcesso] = useState<EquipeColaborador | null>(null);
+  const [acessoGerenciado, setAcessoGerenciado] = useState<EquipeAcessoResumo | null>(null);
+  const [operacaoAcesso, setOperacaoAcesso] = useState<"status" | "senha" | null>(null);
   const [formColaborador, setFormColaborador] = useState<FormBase>(formBaseInicial);
   const [formTecnico, setFormTecnico] = useState<FormBase & { login: string; senha: string }>({
     ...formBaseInicial,
@@ -57,6 +60,10 @@ export default function Equipe() {
     user?.perfil === "ADM" ||
     (user?.perfil === "PCM" &&
       canAccessModule(user?.permissoes, "EQUIPE_COLABORADORES", "executar"));
+  const podeEditarAcessos = canAccessModule(user?.permissoes, "EQUIPE_COLABORADORES", "editar");
+  const podeRedefinirSenhas = canAccessModule(user?.permissoes, "EQUIPE_COLABORADORES", "executar");
+  const podeAdministrarPerfil = (perfil: string) =>
+    user?.perfil === "ADM" || (user?.perfil === "PCM" && perfil === "TECNICO");
   const colaboradoresQuery = useEquipeColaboradores();
   const acessosQuery = useEquipeAcessos();
   const criarColaborador = useCriarEquipeColaborador();
@@ -280,9 +287,29 @@ export default function Equipe() {
                         ) : (
                           <div className="space-y-1">
                             {acessosDoColaborador.map((acesso) => (
-                              <p key={acesso.id_usuario || acesso.login} className="font-medium">
-                                {acesso.login} • {acesso.perfil} • {String(acesso.ativo).toUpperCase() === "SIM" ? "ativo" : "inativo"}
-                              </p>
+                              <div key={acesso.id_usuario || acesso.login} className="space-y-1 rounded-md border border-border p-2">
+                                <p className="font-medium">
+                                  {acesso.login} • {acesso.perfil} • {String(acesso.ativo).toUpperCase() === "SIM" ? "ativo" : "inativo"}
+                                </p>
+                                {podeAdministrarPerfil(acesso.perfil) && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {podeEditarAcessos && (
+                                      <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-[11px]"
+                                        disabled={!acesso.id_usuario || (String(acesso.ativo).toUpperCase() === "SIM" && acesso.login.trim().toLowerCase() === user?.login?.trim().toLowerCase())}
+                                        onClick={() => { setAcessoGerenciado(acesso); setOperacaoAcesso("status"); }}>
+                                        {String(acesso.ativo).toUpperCase() === "SIM" ? "Desativar" : "Ativar"}
+                                      </Button>
+                                    )}
+                                    {podeRedefinirSenhas && (
+                                      <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-[11px]"
+                                        disabled={!acesso.id_usuario}
+                                        onClick={() => { setAcessoGerenciado(acesso); setOperacaoAcesso("senha"); }}>
+                                        Redefinir senha
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             ))}
                           </div>
                         )}
@@ -311,6 +338,13 @@ export default function Equipe() {
         </div>
       )}
 
+      <GerenciarAcessoDialog
+        acesso={acessoGerenciado}
+        operacao={operacaoAcesso}
+        onOpenChange={(open) => {
+          if (!open) { setAcessoGerenciado(null); setOperacaoAcesso(null); }
+        }}
+      />
       {user && (
         <CriarAcessoDialog
           colaborador={colaboradorAcesso}
