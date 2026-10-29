@@ -14,11 +14,11 @@ import {
   useCriarEquipeTecnico,
   useEquipeAcessos,
   useEquipeColaboradores,
-  useEquipeTecnicos,
 } from "@/hooks/use-equipe";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessModule } from "@/lib/authz";
 import type { EquipeColaborador } from "@/lib/equipe-contract";
+import { agruparAcessosPorColaborador, filtrarEquipe, type FiltroAcesso, type FiltroSituacao } from "@/lib/equipe-view";
 
 type FormBase = {
   nome: string;
@@ -39,6 +39,8 @@ const formBaseInicial: FormBase = {
 export default function Equipe() {
   const { user } = useAuth();
   const [busca, setBusca] = useState("");
+  const [situacao, setSituacao] = useState<FiltroSituacao>("todos");
+  const [filtroAcesso, setFiltroAcesso] = useState<FiltroAcesso>("todos");
   const [dialogColaborador, setDialogColaborador] = useState(false);
   const [dialogTecnico, setDialogTecnico] = useState(false);
   const [dialogAcesso, setDialogAcesso] = useState(false);
@@ -56,32 +58,25 @@ export default function Equipe() {
     (user?.perfil === "PCM" &&
       canAccessModule(user?.permissoes, "EQUIPE_COLABORADORES", "executar"));
   const colaboradoresQuery = useEquipeColaboradores();
-  const tecnicosQuery = useEquipeTecnicos();
   const acessosQuery = useEquipeAcessos();
   const criarColaborador = useCriarEquipeColaborador();
   const criarTecnico = useCriarEquipeTecnico();
 
   const colaboradores = colaboradoresQuery.data?.colaboradores ?? [];
-  const acessos = acessosQuery.data?.acessos ?? [];
-  const acessosPorColaborador = useMemo(
-    () =>
-      new Map(
-        acessos
-          .filter((a) => a.id_colaborador)
-          .map((a) => [a.id_colaborador, a])
-      ),
-    [acessos]
-  );
+  const acessosConfirmados = acessosQuery.isSuccess && Array.isArray(acessosQuery.data?.acessos);
+  const acessos = acessosConfirmados ? acessosQuery.data.acessos : [];
+  const acessosPorColaborador = useMemo(() => agruparAcessosPorColaborador(acessos), [acessos]);
+  const filtrados = useMemo(() => filtrarEquipe(colaboradores, acessosPorColaborador, {
+    busca,
+    situacao,
+    acesso: filtroAcesso,
+    acessoConfirmado: acessosConfirmados,
+  }), [busca, situacao, filtroAcesso, colaboradores, acessosPorColaborador, acessosConfirmados]);
 
-  const filtrados = useMemo(() => {
-    const termo = busca.trim().toLocaleLowerCase("pt-BR");
-    if (!termo) return colaboradores;
-    return colaboradores.filter((c) =>
-      [c.nome, c.nome_bd, c.funcao, c.especialidade]
-        .filter(Boolean)
-        .some((v) => String(v).toLocaleLowerCase("pt-BR").includes(termo))
-    );
-  }, [busca, colaboradores]);
+  const totais = useMemo(() => ({
+    ativos: colaboradores.filter((c) => String(c.ativo).trim().toUpperCase() === "SIM").length,
+    comAcesso: colaboradores.filter((c) => (acessosPorColaborador.get(c.id_colaborador)?.length ?? 0) > 0).length,
+  }), [colaboradores, acessosPorColaborador]);
 
   async function submitColaborador(e: FormEvent) {
     e.preventDefault();
@@ -121,14 +116,9 @@ export default function Equipe() {
     }
   }
 
-  const carregando =
-    colaboradoresQuery.isLoading ||
-    tecnicosQuery.isLoading ||
-    acessosQuery.isLoading;
-  const erro =
-    colaboradoresQuery.error ||
-    tecnicosQuery.error ||
-    acessosQuery.error;
+  // Falha na consulta de acessos não pode apagar a listagem de colaboradores.
+  const carregando = colaboradoresQuery.isLoading;
+  const erro = colaboradoresQuery.error;
 
   return (
     <div className="page-container max-w-5xl pb-24">
@@ -139,13 +129,11 @@ export default function Equipe() {
             variant="outline"
             size="sm"
             onClick={() => {
-              colaboradoresQuery.refetch();
-              tecnicosQuery.refetch();
-              acessosQuery.refetch();
+              void colaboradoresQuery.refetch();
+              void acessosQuery.refetch();
             }}
             disabled={
               colaboradoresQuery.isFetching ||
-              tecnicosQuery.isFetching ||
               acessosQuery.isFetching
             }
           >
@@ -168,16 +156,56 @@ export default function Equipe() {
       </div>
 
       <Card className="mb-4">
-        <CardContent className="p-4">
+        <CardContent className="space-y-3 p-4">
+          <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
+            <div><p className="text-muted-foreground">Colaboradores</p><p className="text-lg font-semibold">{colaboradores.length}</p></div>
+            <div><p className="text-muted-foreground">Ativos</p><p className="text-lg font-semibold">{totais.ativos}</p></div>
+            {acessosConfirmados && <div><p className="text-muted-foreground">Com acesso</p><p className="text-lg font-semibold">{totais.comAcesso}</p></div>}
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Buscar por nome, função ou especialidade"
+              aria-label="Buscar colaboradores"
+              placeholder="Buscar nome, função, especialidade ou login"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
             />
           </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="filtro-situacao">Situação</Label>
+              <Select value={situacao} onValueChange={(v) => setSituacao(v as FiltroSituacao)}>
+                <SelectTrigger id="filtro-situacao"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="ativos">Ativos</SelectItem>
+                  <SelectItem value="inativos">Inativos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="filtro-acesso">Acesso ao sistema</Label>
+              <Select
+                value={acessosConfirmados ? filtroAcesso : "todos"}
+                onValueChange={(v) => setFiltroAcesso(v as FiltroAcesso)}
+                disabled={!acessosConfirmados}
+              >
+                <SelectTrigger id="filtro-acesso"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="com">Com acesso</SelectItem>
+                  <SelectItem value="sem">Sem acesso</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {acessosQuery.isError && (
+            <p role="alert" className="text-xs text-destructive">
+              Não foi possível consultar os acessos. A lista de colaboradores continua disponível,
+              mas vínculos e criação de novos acessos ficam indisponíveis até atualizar.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -195,11 +223,16 @@ export default function Equipe() {
       ) : (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            {filtrados.length} colaborador(es) exibido(s)
+            {filtrados.length} de {colaboradores.length} colaborador(es) exibido(s)
           </p>
+          {filtrados.length === 0 && (
+            <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">
+              Nenhum colaborador encontrado com os filtros selecionados.
+            </CardContent></Card>
+          )}
 
           {filtrados.map((c) => {
-            const acesso = acessosPorColaborador.get(c.id_colaborador);
+            const acessosDoColaborador = acessosPorColaborador.get(c.id_colaborador) ?? [];
             return (
               <Card key={c.id_colaborador}>
                 <CardContent className="p-4">
@@ -218,9 +251,9 @@ export default function Equipe() {
                       <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold">
                         {c.ativo === "SIM" ? "ATIVO" : "INATIVO"}
                       </span>
-                      {acesso && (
+                      {acessosDoColaborador.length > 0 && (
                         <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
-                          {acesso.perfil}
+                          {acessosDoColaborador.length} acesso(s)
                         </span>
                       )}
                     </div>
@@ -238,12 +271,22 @@ export default function Equipe() {
                     <div>
                       <p className="text-muted-foreground">Acesso ao sistema</p>
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium">
-                          {acesso
-                            ? `${acesso.login} • ${acesso.perfil} • ${acesso.ativo === "SIM" ? "ativo" : "inativo"}`
-                            : "Sem acesso"}
-                        </p>
-                        {!acesso && podeCriarAcesso && (
+                        {!acessosConfirmados ? (
+                          <p className="text-muted-foreground">
+                            {acessosQuery.isLoading ? "Verificando acessos..." : "Acessos indisponíveis"}
+                          </p>
+                        ) : acessosDoColaborador.length === 0 ? (
+                          <p className="text-muted-foreground">Sem acesso</p>
+                        ) : (
+                          <div className="space-y-1">
+                            {acessosDoColaborador.map((acesso) => (
+                              <p key={acesso.id_usuario || acesso.login} className="font-medium">
+                                {acesso.login} • {acesso.perfil} • {String(acesso.ativo).toUpperCase() === "SIM" ? "ativo" : "inativo"}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                        {acessosConfirmados && acessosDoColaborador.length === 0 && podeCriarAcesso && (
                           <Button
                             type="button"
                             variant="outline"
