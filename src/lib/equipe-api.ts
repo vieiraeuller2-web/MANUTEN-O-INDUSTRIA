@@ -7,6 +7,8 @@ import type {
   CriarTecnicoPayload,
   EquipeAcessosResponse,
   CriarAcessoPayload,
+  AlterarStatusAcessoPayload,
+  RedefinirSenhaAcessoPayload,
 } from "@/lib/equipe-contract";
 
 export async function fetchEquipeColaboradores(): Promise<EquipeColaboradoresResponse> {
@@ -49,4 +51,12 @@ export async function criarEquipeAcesso(
   payload: CriarAcessoPayload
 ): Promise<Record<string, unknown>> {
   return apiProxy("equipe_acesso_criar", payload);
+}
+
+export async function alterarStatusEquipeAcesso(payload: AlterarStatusAcessoPayload): Promise<Record<string, unknown>> {
+  return apiProxy("equipe_acesso_status", payload);
+}
+
+export async function redefinirSenhaEquipeAcesso(payload: RedefinirSenhaAcessoPayload): Promise<Record<string, unknown>> {
+  return apiProxy("equipe_acesso_redefinir_senha", payload);
 }
