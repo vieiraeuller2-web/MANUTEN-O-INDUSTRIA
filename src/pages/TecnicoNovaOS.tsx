@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { periodoOSManualValido } from "@/lib/tecnico-os-validation";
+import { encontrarOpcaoOficial } from "@/lib/opcoes-tecnico";
 import { CheckCircle2, Loader2, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
@@ -82,7 +83,8 @@ export default function TecnicoNovaOS() {
       return;
     }
 
-    if (!equipamentos.includes(form.equipamento)) {
+    const equipamentoOficial = encontrarOpcaoOficial(form.equipamento, equipamentos);
+    if (!equipamentoOficial) {
       toast({
         title: "Equipamento inválido.",
         description: "Selecione um equipamento da lista oficial.",
@@ -114,7 +116,7 @@ export default function TecnicoNovaOS() {
     setSaving(true);
 
     try {
-      const result = await registrarOSManualTecnico(form);
+      const result = await registrarOSManualTecnico({ ...form, equipamento: equipamentoOficial });
       await queryClient.invalidateQueries({ queryKey: tecnicoQueryKeys.raiz });
       const id = result.id_os || result.numero_os || "";
       setSavedId(id);
@@ -155,22 +157,23 @@ export default function TecnicoNovaOS() {
         <div className="stat-card space-y-4">
           <div className="space-y-1">
             <Label htmlFor="equipamento">Equipamento / TAG *</Label>
-            <select
+            <Input
               id="equipamento"
+              list="equipamentos-oficiais-tecnico"
               value={form.equipamento}
               onChange={(e) => setField("equipamento", e.target.value)}
               disabled={loadingOptions}
-              className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">
-                {loadingOptions ? "Carregando..." : "Selecione o equipamento"}
-              </option>
-              {equipamentos.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
+              placeholder={loadingOptions ? "Carregando..." : "Digite a TAG ou escolha na lista"}
+              autoComplete="off"
+              className="h-11"
+              required
+            />
+            <datalist id="equipamentos-oficiais-tecnico">
+              {equipamentos.map((item) => <option key={item} value={item} />)}
+            </datalist>
+            <p className="text-xs text-muted-foreground">
+              Digite para localizar ou selecione uma TAG cadastrada. Apenas equipamentos oficiais podem ser registrados.
+            </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
