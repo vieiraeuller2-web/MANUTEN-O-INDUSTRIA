@@ -58,7 +58,8 @@ export function usePaginatedOS(
 
   const query = useInfiniteQuery({
     queryKey,
-    queryFn: async ({ pageParam }) => {
+    enabled: Boolean(userId && userId !== "guest"),
+    queryFn: async ({ pageParam, signal }) => {
       const params: Record<string, unknown> = {
         page_size: PAGE_SIZE,
         ...filters,
@@ -66,7 +67,7 @@ export function usePaginatedOS(
       if (pageParam) {
         params.cursor = pageParam;
       }
-      return apiProxy<PaginatedOS>("listar_os_paginado", params);
+      return apiProxy<PaginatedOS>("listar_os_paginado", params, { signal });
     },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
