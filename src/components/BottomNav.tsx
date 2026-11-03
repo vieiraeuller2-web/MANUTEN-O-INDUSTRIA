@@ -13,7 +13,8 @@ import {
   ListChecks,
   LogOut,
 } from "lucide-react";
-import { useAuth, canAccessRoute } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { modulosPermitidos } from "@/lib/kron-navigation";
 import type { Perfil } from "@/lib/api-client";
 
 export interface NavItem {
@@ -51,10 +52,7 @@ export default function BottomNav() {
 
 
   // Filtra itens visíveis pelo perfil
-  const visibleItems = allNavItems.filter((item) => {
-    if (item.perfis && !item.perfis.includes(user.perfil)) return false;
-    return canAccessRoute(user, item.path);
-  });
+  const visibleItems = modulosPermitidos(user, allNavItems);
 
   const handleLogout = async () => {
     await logout();
