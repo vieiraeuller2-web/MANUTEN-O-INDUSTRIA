@@ -8,7 +8,7 @@
 .kron-os-history table tr:nth-child(even){background:hsl(var(--muted)/.08)}
 .kron-os-history table tbody tr:hover{background:hsl(var(--primary)/.055)}
 .kron-os-history table td:last-child button{white-space:nowrap}
-.kron-os-history .md\\:hidden > .stat-card{border-radius:14px;transition:border-color .15s,box-shadow .15s}
-.kron-os-history .md\\:hidden > .stat-card:focus-within{border-color:hsl(var(--primary)/.45);box-shadow:0 0 0 2px hsl(var(--primary)/.08)}
+.kron-os-history .kron-os-history__mobile > .stat-card{border-radius:14px;transition:border-color .15s,box-shadow .15s}
+.kron-os-history .kron-os-history__mobile > .stat-card:focus-within{border-color:hsl(var(--primary)/.45);box-shadow:0 0 0 2px hsl(var(--primary)/.08)}
 @media(max-width:639px){.kron-os-history .stat-card{padding:14px}.kron-os-history input{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.kron-os-history *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
