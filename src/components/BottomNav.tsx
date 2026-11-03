@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { modulosPermitidos } from "@/lib/kron-navigation";
+import { anteciparModuloAutorizado } from "@/lib/kron-prefetch";
 import type { Perfil } from "@/lib/api-client";
 
 export interface NavItem {
@@ -71,6 +72,8 @@ export default function BottomNav() {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
+              onTouchStart={() => anteciparModuloAutorizado(item.path)}
+              onFocus={() => anteciparModuloAutorizado(item.path)}
               aria-label={item.title || item.label}
               title={item.title || item.label}
               className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[72px] shrink-0 active:scale-95 ${
