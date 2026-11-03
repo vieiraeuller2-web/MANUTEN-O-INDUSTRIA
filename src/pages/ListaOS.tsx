@@ -8,9 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { usePaginatedOS, type OSFilters } from "@/hooks/use-paginated-os";
 import { useAuth } from "@/contexts/AuthContext";
+import { canAccessRoute } from "@/lib/authz";
+import { Skeleton } from "@/components/ui/skeleton";
 import { calcularTempoOS, formatDataBr, formatHoraBr } from "@/lib/time-helpers";
 import { useDebounce } from "@/hooks/use-debounce";
-import { AlertCircle, Eye, Filter, FilterX, Loader2, Plus, Search } from "lucide-react";
+import { AlertCircle, Eye, Filter, FilterX, Loader2, Plus, Search, CalendarDays, ClipboardList, X } from "lucide-react";
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -25,6 +27,7 @@ export default function ListaOS() {
   const { user } = useAuth();
   const userId = user?.login || "guest";
   const unidade = user?.unidade || "";
+  const podeRegistrarOS = canAccessRoute(user, "/os/nova");
 
   const [search, setSearch] = useState("");
   const [filtroSetor, setFiltroSetor] = useState("");
@@ -36,7 +39,7 @@ export default function ListaOS() {
   const [showFilters, setShowFilters] = useState(false);
   const [detail, setDetail] = useState<any | null>(null);
 
-  const dSearch = useDebounce(search, 400);
+  const dSearch = useDebounce(search.trim(), 500);
   const dResp = useDebounce(filtroResp, 400);
   const dSetor = useDebounce(filtroSetor, 400);
   const dArea = useDebounce(filtroArea, 400);
@@ -80,6 +83,9 @@ export default function ListaOS() {
   );
 
   const apiErrorMessage = error instanceof Error ? error.message : "Não foi possível carregar os dados.";
+  const filtrosAplicados = [dSearch, dResp, dSetor, dArea, dTipo, filtroDataDe, filtroDataAte].filter(Boolean).length;
+  const digitandoBusca = search.trim() !== dSearch || filtroResp !== dResp || filtroSetor !== dSetor || filtroArea !== dArea || filtroTipo !== dTipo;
+  const atualizando = !isLoading && isFetching && !isFetchingNextPage;
 
   const limpar = useCallback(() => {
     setSearch("");
@@ -92,8 +98,8 @@ export default function ListaOS() {
   }, []);
 
   return (
-    <div className="page-container max-w-6xl">
-      <div className="flex items-start justify-between mb-4 gap-3">
+    <div className="page-container max-w-6xl kron-os-history">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
         <PageHeader
           title="Histórico de OS"
           subtitle={
@@ -102,25 +108,34 @@ export default function ListaOS() {
               : `Exibindo ${allItems.length} de ~${totalEstimate} registros`
           }
         />
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <RefreshButton onClick={() => refetch()} isFetching={isFetching && !isFetchingNextPage} label="Atualizar dados" />
-          <Button asChild size="sm" className="gap-2">
-            <Link to="/os/nova">
-              <Plus className="h-4 w-4" /> Registrar OS
-            </Link>
-          </Button>
+          {podeRegistrarOS && (
+            <Button asChild size="sm" className="gap-2">
+              <Link to="/os/nova">
+                <Plus className="h-4 w-4" /> Registrar OS
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="flex gap-2 mb-3">
+      <div className="stat-card mb-4 space-y-3 !p-4 sm:!p-5">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-primary" aria-hidden="true" /><h2 className="text-sm font-semibold">Consultar ordens de serviço</h2></div>
+          <p className="text-xs text-muted-foreground" aria-live="polite">{digitandoBusca ? "Preparando pesquisa..." : atualizando ? "Atualizando resultados..." : `${allItems.length} registros carregados`}</p>
+        </div>
+      <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar OS, equipamento ou observações..."
+            placeholder="Número da OS, TAG ou observações..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="pl-9"
+            className="pl-9 pr-9"
+            aria-label="Pesquisar ordens de serviço"
           />
+          {search && <button type="button" onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:text-foreground" aria-label="Limpar pesquisa"><X className="h-4 w-4" /></button>}
         </div>
         <Button
           type="button"
@@ -128,13 +143,22 @@ export default function ListaOS() {
           size="icon"
           onClick={() => setShowFilters((value) => !value)}
           aria-label="Alternar filtros"
+          aria-expanded={showFilters}
+          aria-controls="kron-os-filtros"
         >
           <Filter className="h-4 w-4" />
         </Button>
       </div>
+      {(hasFilters || filtrosAplicados > 0) && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">{filtrosAplicados} filtro(s) aplicado(s)</span>
+          <Button type="button" size="sm" variant="ghost" onClick={limpar} className="h-8 gap-1.5 text-xs"><FilterX className="h-3.5 w-3.5" /> Limpar todos</Button>
+        </div>
+      )}
+      </div>
 
       {showFilters && (
-        <div className="stat-card mb-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+        <div id="kron-os-filtros" className="stat-card mb-4 space-y-3 animate-in fade-in slide-in-from-top-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <Input placeholder="Setor" value={filtroSetor} onChange={(event) => setFiltroSetor(event.target.value)} />
             <Input placeholder="Área" value={filtroArea} onChange={(event) => setFiltroArea(event.target.value)} />
@@ -142,8 +166,8 @@ export default function ListaOS() {
             <Input placeholder="Responsável" value={filtroResp} onChange={(event) => setFiltroResp(event.target.value)} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <Input type="date" value={filtroDataDe} onChange={(event) => setFiltroDataDe(event.target.value)} />
-            <Input type="date" value={filtroDataAte} onChange={(event) => setFiltroDataAte(event.target.value)} />
+            <div className="space-y-1"><label htmlFor="kron-os-data-de" className="text-xs font-medium text-muted-foreground">Data inicial</label><Input id="kron-os-data-de" type="date" value={filtroDataDe} onChange={(event) => setFiltroDataDe(event.target.value)} /></div>
+            <div className="space-y-1"><label htmlFor="kron-os-data-ate" className="text-xs font-medium text-muted-foreground">Data final</label><Input id="kron-os-data-ate" type="date" min={filtroDataDe || undefined} value={filtroDataAte} onChange={(event) => setFiltroDataAte(event.target.value)} /></div>
             <Button type="button" variant="ghost" onClick={limpar} disabled={!hasFilters} className="gap-2">
               <FilterX className="h-4 w-4" /> Limpar filtros
             </Button>
@@ -152,9 +176,9 @@ export default function ListaOS() {
       )}
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin mb-2" />
-          <p className="text-sm">Carregando dados...</p>
+        <div className="stat-card space-y-3" role="status" aria-label="Carregando histórico de OS">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Carregando histórico...</div>
+          {Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-12 w-full" />)}
         </div>
       ) : isError ? (
         <div className="stat-card border border-destructive/40 bg-destructive/5 text-center py-8">
@@ -173,7 +197,7 @@ export default function ListaOS() {
         </div>
       ) : (
         <>
-          <div className="hidden md:block rounded-lg border border-border bg-card overflow-hidden">
+          <div className="hidden md:block rounded-xl border border-border bg-card overflow-x-auto shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -217,11 +241,11 @@ export default function ListaOS() {
             </Table>
           </div>
 
-          <div className="md:hidden space-y-2">
+          <div className="md:hidden space-y-3">
             {allItems.map((os: any, index: number) => {
               const key = os.id_os || os.row_ref || `idx-${index}`;
               return (
-                <div key={key} className="stat-card">
+                <div key={key} className="stat-card space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-[11px] font-mono text-muted-foreground">
@@ -235,7 +259,7 @@ export default function ListaOS() {
                     </span>
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <span className="text-xs text-muted-foreground">{formatDataBr(os.data_inicio)}</span>
+                    <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden="true"/>{formatDataBr(os.data_inicio)}</span>
                     <Button type="button" size="sm" variant="outline" onClick={() => setDetail(os)} className="h-8 gap-1">
                       <Eye className="h-3.5 w-3.5" /> Ver detalhes
                     </Button>
