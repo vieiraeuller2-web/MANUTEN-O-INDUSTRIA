@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import "./ListaOS.css";
 import PageHeader from "@/components/PageHeader";
 import RefreshButton from "@/components/RefreshButton";
 import { Input } from "@/components/ui/input";
@@ -59,7 +60,6 @@ export default function ListaOS() {
   );
 
   const {
-    data,
     isLoading,
     isError,
     error,
@@ -160,10 +160,10 @@ export default function ListaOS() {
       {showFilters && (
         <div id="kron-os-filtros" className="stat-card mb-4 space-y-3 animate-in fade-in slide-in-from-top-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-            <Input placeholder="Setor" value={filtroSetor} onChange={(event) => setFiltroSetor(event.target.value)} />
-            <Input placeholder="Área" value={filtroArea} onChange={(event) => setFiltroArea(event.target.value)} />
-            <Input placeholder="Tipo" value={filtroTipo} onChange={(event) => setFiltroTipo(event.target.value)} />
-            <Input placeholder="Responsável" value={filtroResp} onChange={(event) => setFiltroResp(event.target.value)} />
+            <Input aria-label="Filtrar por setor" placeholder="Setor" value={filtroSetor} onChange={(event) => setFiltroSetor(event.target.value)} />
+            <Input aria-label="Filtrar por área" placeholder="Área" value={filtroArea} onChange={(event) => setFiltroArea(event.target.value)} />
+            <Input aria-label="Filtrar por tipo" placeholder="Tipo" value={filtroTipo} onChange={(event) => setFiltroTipo(event.target.value)} />
+            <Input aria-label="Filtrar por responsável" placeholder="Responsável" value={filtroResp} onChange={(event) => setFiltroResp(event.target.value)} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div className="space-y-1"><label htmlFor="kron-os-data-de" className="text-xs font-medium text-muted-foreground">Data inicial</label><Input id="kron-os-data-de" type="date" value={filtroDataDe} onChange={(event) => setFiltroDataDe(event.target.value)} /></div>
@@ -241,7 +241,7 @@ export default function ListaOS() {
             </Table>
           </div>
 
-          <div className="md:hidden space-y-3">
+          <div className="kron-os-history__mobile md:hidden space-y-3">
             {allItems.map((os: any, index: number) => {
               const key = os.id_os || os.row_ref || `idx-${index}`;
               return (
