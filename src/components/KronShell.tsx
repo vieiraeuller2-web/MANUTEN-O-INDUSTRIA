@@ -5,6 +5,7 @@ import BottomNav, { allNavItems, type NavItem } from "@/components/BottomNav";
 import ThemeToggle from "@/components/ThemeToggle";
 import KronQuickNav from "@/components/KronQuickNav";
 import { modulosPermitidos } from "@/lib/kron-navigation";
+import { anteciparModuloAutorizado } from "@/lib/kron-prefetch";
 import { useAuth, canAccessRoute } from "@/contexts/AuthContext";
 import { AvatarEditor, AvatarFace, DEFAULT_AVATAR, readAvatar, type AvatarSelection } from "@/components/AvatarEditor";
 import "./KronShell.css";
@@ -74,6 +75,8 @@ export default function KronShell({ children }: { children: ReactNode }) {
                       key={item.path}
                       type="button"
                       onClick={() => goTo(item)}
+                      onMouseEnter={() => anteciparModuloAutorizado(item.path)}
+                      onFocus={() => anteciparModuloAutorizado(item.path)}
                       aria-current={active ? "page" : undefined}
                       className={`kron-sidebar__link ${active ? "is-active" : ""}`}
                       title={item.title || item.label}
