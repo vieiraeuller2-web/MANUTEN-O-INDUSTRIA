@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { allNavItems } from "@/components/BottomNav";
 import { modulosPermitidos, pesquisarModulos } from "@/lib/kron-navigation";
+import { anteciparModuloAutorizado } from "@/lib/kron-prefetch";
 import { useAuth } from "@/contexts/AuthContext";
 import "./KronQuickNav.css";
 
@@ -74,6 +75,8 @@ export default function KronQuickNav() {
               <p className="p-5 text-center text-sm text-muted-foreground">Nenhum módulo autorizado encontrado.</p>
             ) : resultados.map((item) => (
               <button type="button" role="listitem" key={item.path} onClick={() => irPara(item.path)}
+                onMouseEnter={() => anteciparModuloAutorizado(item.path)}
+                onFocus={() => anteciparModuloAutorizado(item.path)}
                 className="kron-quicknav-result">
                 <item.icon size={18} aria-hidden="true"/>
                 <span className="min-w-0 flex-1 text-left">{item.title || item.label}</span>
