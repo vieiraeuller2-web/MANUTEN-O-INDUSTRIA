@@ -61,6 +61,7 @@ export default function ListaOS() {
 
   const {
     isLoading,
+    isPlaceholderData,
     isError,
     error,
     refetch,
@@ -105,7 +106,7 @@ export default function ListaOS() {
           subtitle={
             isLoading
               ? "Carregando registros..."
-              : `Exibindo ${allItems.length} de ~${totalEstimate} registros`
+              : isPlaceholderData ? "Atualizando resultados da pesquisa..." : `Exibindo ${allItems.length} de ~${totalEstimate} registros`
           }
         />
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -120,10 +121,10 @@ export default function ListaOS() {
         </div>
       </div>
 
-      <div className="stat-card mb-4 space-y-3 !p-4 sm:!p-5">
+      <div className="kron-os-history__search stat-card mb-4 space-y-3 !p-4 sm:!p-5">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-primary" aria-hidden="true" /><h2 className="text-sm font-semibold">Consultar ordens de serviço</h2></div>
-          <p className="text-xs text-muted-foreground" aria-live="polite">{digitandoBusca ? "Preparando pesquisa..." : atualizando ? "Atualizando resultados..." : `${allItems.length} registros carregados`}</p>
+          <p className="text-xs text-muted-foreground" aria-live="polite">{digitandoBusca ? "Preparando pesquisa..." : isPlaceholderData || atualizando ? "Atualizando resultados..." : `${allItems.length} registros carregados`}</p>
         </div>
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -175,7 +176,7 @@ export default function ListaOS() {
         </div>
       )}
 
-      {isLoading ? (
+      {isLoading || isPlaceholderData ? (
         <div className="stat-card space-y-3" role="status" aria-label="Carregando histórico de OS">
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Carregando histórico...</div>
           {Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-12 w-full" />)}
