@@ -1,0 +1,14 @@
+/* Histórico de OS — apresentação isolada, sem alterar os contratos de dados. */
+.kron-os-history > .stat-card:first-of-type{position:relative;overflow:hidden;border-radius:16px;box-shadow:0 16px 38px -32px rgba(0,0,0,.6)}
+.kron-os-history > .stat-card:first-of-type::before{content:"";position:absolute;left:18px;right:18px;top:0;height:2px;background:linear-gradient(90deg,hsl(var(--primary)),transparent 78%)}
+.kron-os-history input:focus-visible{outline-offset:1px}
+.kron-os-history [role="table"] thead,.kron-os-history table thead{background:hsl(var(--muted)/.36)}
+.kron-os-history table{min-width:860px}
+.kron-os-history table td:first-child{font-weight:750;font-variant-numeric:tabular-nums}
+.kron-os-history table tr:nth-child(even){background:hsl(var(--muted)/.08)}
+.kron-os-history table tbody tr:hover{background:hsl(var(--primary)/.055)}
+.kron-os-history table td:last-child button{white-space:nowrap}
+.kron-os-history .md\\:hidden > .stat-card{border-radius:14px;transition:border-color .15s,box-shadow .15s}
+.kron-os-history .md\\:hidden > .stat-card:focus-within{border-color:hsl(var(--primary)/.45);box-shadow:0 0 0 2px hsl(var(--primary)/.08)}
+@media(max-width:639px){.kron-os-history .stat-card{padding:14px}.kron-os-history input{font-size:16px}}
+@media(prefers-reduced-motion:reduce){.kron-os-history *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
