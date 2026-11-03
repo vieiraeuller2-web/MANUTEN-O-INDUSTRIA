@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowUpRight, ChevronRight, LogOut, Plus } from "lucide-react";
 import BottomNav, { allNavItems, type NavItem } from "@/components/BottomNav";
 import ThemeToggle from "@/components/ThemeToggle";
+import KronQuickNav from "@/components/KronQuickNav";
+import { modulosPermitidos } from "@/lib/kron-navigation";
 import { useAuth, canAccessRoute } from "@/contexts/AuthContext";
 import { AvatarEditor, AvatarFace, DEFAULT_AVATAR, readAvatar, type AvatarSelection } from "@/components/AvatarEditor";
 import "./KronShell.css";
@@ -34,9 +36,7 @@ export default function KronShell({ children }: { children: ReactNode }) {
   // não mostra navegação nem dados do usuário antes da autenticação.
   if (status !== "authenticated" || !user) return <>{children}</>;
 
-  const visibleItems = allNavItems.filter(
-    (item) => (!item.perfis || item.perfis.includes(user.perfil)) && canAccessRoute(user, item.path),
-  );
+  const visibleItems = modulosPermitidos(user, allNavItems);
   const currentLabel = getCurrentLabel(location.pathname);
   const allowNewOS = canAccessRoute(user, "/os/nova");
   const menuGroups = [
@@ -111,6 +111,7 @@ export default function KronShell({ children }: { children: ReactNode }) {
             <strong>{currentLabel}</strong>
           </div>
           <div className="kron-topbar__tools">
+            <KronQuickNav />
             {allowNewOS && (
               <button type="button" className="kron-topbar__new" onClick={() => navigate("/os/nova")}>
                 <Plus size={16}/><span>Nova ordem de serviço</span><ArrowUpRight size={14}/>
