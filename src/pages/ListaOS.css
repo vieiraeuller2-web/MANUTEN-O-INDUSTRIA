@@ -1,6 +1,6 @@
 /* Histórico de OS — apresentação isolada, sem alterar os contratos de dados. */
-.kron-os-history > .stat-card:first-of-type{position:relative;overflow:hidden;border-radius:16px;box-shadow:0 16px 38px -32px rgba(0,0,0,.6)}
-.kron-os-history > .stat-card:first-of-type::before{content:"";position:absolute;left:18px;right:18px;top:0;height:2px;background:linear-gradient(90deg,hsl(var(--primary)),transparent 78%)}
+.kron-os-history .kron-os-history__search{position:relative;overflow:hidden;border-radius:16px;box-shadow:0 16px 38px -32px rgba(0,0,0,.6)}
+.kron-os-history .kron-os-history__search::before{content:"";position:absolute;left:18px;right:18px;top:0;height:2px;background:linear-gradient(90deg,hsl(var(--primary)),transparent 78%)}
 .kron-os-history input:focus-visible{outline-offset:1px}
 .kron-os-history [role="table"] thead,.kron-os-history table thead{background:hsl(var(--muted)/.36)}
 .kron-os-history table{min-width:860px}
