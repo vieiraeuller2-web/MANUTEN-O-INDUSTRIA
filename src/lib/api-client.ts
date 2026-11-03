@@ -134,13 +134,15 @@ export async function apiLogout(): Promise<void> {
 
 export async function apiProxy<T = Record<string, unknown>>(
   action: string,
-  params: Record<string, unknown> = {}
+  params: Record<string, unknown> = {},
+  options?: { signal?: AbortSignal },
 ): Promise<T> {
   const res = await fetch(`${API_BASE}/proxy`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...params, action }),
     credentials: "include",
+    signal: options?.signal,
   });
 
   const data = await res.json();
