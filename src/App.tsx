@@ -42,10 +42,30 @@ const queryClient = new QueryClient({
 
 function PageFallback() {
   return (
-    <div className="page-container">
-      <div className="stat-card flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Carregando tela...
+    <div className="page-container" role="status" aria-label="Carregando módulo" aria-live="polite">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-2">
+          <div className="h-7 w-56 max-w-full animate-pulse rounded-lg bg-muted" />
+          <div className="h-3 w-72 max-w-full animate-pulse rounded-md bg-muted/70" />
+        </div>
+        <span className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          Carregando módulo...
+        </span>
+      </div>
+      <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4" aria-hidden="true">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className="stat-card space-y-3">
+            <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+            <div className="h-8 w-2/3 animate-pulse rounded bg-muted/70" />
+          </div>
+        ))}
+      </div>
+      <div className="stat-card space-y-4" aria-hidden="true">
+        <div className="h-5 w-44 animate-pulse rounded bg-muted" />
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className="h-11 w-full animate-pulse rounded-lg bg-muted/60" />
+        ))}
       </div>
     </div>
   );
