@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { KeyRound, Loader2, Plus, RefreshCw, Search, UserPlus, Users } from "lucide-react";
+import "./Equipe.css";
+import { KeyRound, Loader2, Plus, RefreshCw, Search, UserPlus, Users, X, FilterX } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import CriarAcessoDialog from "@/components/equipe/CriarAcessoDialog";
 import GerenciarAcessoDialog from "@/components/equipe/GerenciarAcessoDialog";
@@ -10,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { useDebounce } from "@/hooks/use-debounce";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   useCriarEquipeColaborador,
   useCriarEquipeTecnico,
@@ -29,6 +32,10 @@ type FormBase = {
   contabilizar_hh_custo: "SIM" | "NAO";
 };
 
+const EQUIPE_VAZIA: EquipeColaborador[] = [];
+const ACESSOS_VAZIOS: EquipeAcessoResumo[] = [];
+const ITENS_POR_LOTE = 24;
+
 const formBaseInicial: FormBase = {
   nome: "",
   funcao: "",
@@ -40,6 +47,8 @@ const formBaseInicial: FormBase = {
 export default function Equipe() {
   const { user } = useAuth();
   const [busca, setBusca] = useState("");
+  const buscaAplicada = useDebounce(busca.trim(), 300);
+  const [itensVisiveis, setItensVisiveis] = useState(ITENS_POR_LOTE);
   const [situacao, setSituacao] = useState<FiltroSituacao>("todos");
   const [filtroAcesso, setFiltroAcesso] = useState<FiltroAcesso>("todos");
   const [dialogColaborador, setDialogColaborador] = useState(false);
@@ -69,16 +78,20 @@ export default function Equipe() {
   const criarColaborador = useCriarEquipeColaborador();
   const criarTecnico = useCriarEquipeTecnico();
 
-  const colaboradores = colaboradoresQuery.data?.colaboradores ?? [];
+  const colaboradores = colaboradoresQuery.data?.colaboradores ?? EQUIPE_VAZIA;
   const acessosConfirmados = acessosQuery.isSuccess && Array.isArray(acessosQuery.data?.acessos);
-  const acessos = acessosConfirmados ? (acessosQuery.data?.acessos ?? []) : [];
+  const acessos = acessosConfirmados ? (acessosQuery.data?.acessos ?? ACESSOS_VAZIOS) : ACESSOS_VAZIOS;
   const acessosPorColaborador = useMemo(() => agruparAcessosPorColaborador(acessos), [acessos]);
   const filtrados = useMemo(() => filtrarEquipe(colaboradores, acessosPorColaborador, {
-    busca,
+    busca: buscaAplicada,
     situacao,
     acesso: filtroAcesso,
     acessoConfirmado: acessosConfirmados,
-  }), [busca, situacao, filtroAcesso, colaboradores, acessosPorColaborador, acessosConfirmados]);
+  }), [buscaAplicada, situacao, filtroAcesso, colaboradores, acessosPorColaborador, acessosConfirmados]);
+  const colaboradoresExibidos = useMemo(() => filtrados.slice(0, itensVisiveis), [filtrados, itensVisiveis]);
+  const temMaisColaboradores = itensVisiveis < filtrados.length;
+  const pesquisaPendente = busca.trim() !== buscaAplicada;
+  const limparFiltros = () => { setBusca(""); setSituacao("todos"); setFiltroAcesso("todos"); setItensVisiveis(ITENS_POR_LOTE); };
 
   const totais = useMemo(() => ({
     ativos: colaboradores.filter((c) => String(c.ativo).trim().toUpperCase() === "SIM").length,
@@ -128,7 +141,7 @@ export default function Equipe() {
   const erro = colaboradoresQuery.error;
 
   return (
-    <div className="page-container max-w-5xl pb-24">
+    <div className="page-container max-w-5xl pb-24 kron-equipe">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <PageHeader title="Equipe / Colaboradores" subtitle="Cadastro e consulta da equipe de manutenção" />
         <div className="flex flex-wrap gap-2">
@@ -162,27 +175,30 @@ export default function Equipe() {
         </div>
       </div>
 
-      <Card className="mb-4">
+      <Card className="mb-4 kron-equipe__filters">
         <CardContent className="space-y-3 p-4">
           <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
-            <div><p className="text-muted-foreground">Colaboradores</p><p className="text-lg font-semibold">{colaboradores.length}</p></div>
-            <div><p className="text-muted-foreground">Ativos</p><p className="text-lg font-semibold">{totais.ativos}</p></div>
-            {acessosConfirmados && <div><p className="text-muted-foreground">Com acesso</p><p className="text-lg font-semibold">{totais.comAcesso}</p></div>}
+            <div><p className="text-muted-foreground">Colaboradores</p><p className="text-lg font-semibold tabular-nums">{colaboradores.length}</p></div>
+            <div><p className="text-muted-foreground">Ativos</p><p className="text-lg font-semibold tabular-nums">{totais.ativos}</p></div>
+            {acessosConfirmados && <div><p className="text-muted-foreground">Com acesso</p><p className="text-lg font-semibold tabular-nums">{totais.comAcesso}</p></div>}
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              className="pl-9"
+              className="pl-9 pr-9"
               aria-label="Buscar colaboradores"
               placeholder="Buscar nome, função, especialidade ou login"
               value={busca}
-              onChange={(e) => setBusca(e.target.value)}
+              onChange={(e) => { setBusca(e.target.value); setItensVisiveis(ITENS_POR_LOTE); }}
             />
+            {busca && (
+              <button type="button" onClick={() => { setBusca(""); setItensVisiveis(ITENS_POR_LOTE); }} aria-label="Limpar busca de colaboradores" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="filtro-situacao">Situação</Label>
-              <Select value={situacao} onValueChange={(v) => setSituacao(v as FiltroSituacao)}>
+              <Select value={situacao} onValueChange={(v) => { setSituacao(v as FiltroSituacao); setItensVisiveis(ITENS_POR_LOTE); }}>
                 <SelectTrigger id="filtro-situacao"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
@@ -195,7 +211,7 @@ export default function Equipe() {
               <Label htmlFor="filtro-acesso">Acesso ao sistema</Label>
               <Select
                 value={acessosConfirmados ? filtroAcesso : "todos"}
-                onValueChange={(v) => setFiltroAcesso(v as FiltroAcesso)}
+                onValueChange={(v) => { setFiltroAcesso(v as FiltroAcesso); setItensVisiveis(ITENS_POR_LOTE); }}
                 disabled={!acessosConfirmados}
               >
                 <SelectTrigger id="filtro-acesso"><SelectValue /></SelectTrigger>
@@ -207,6 +223,12 @@ export default function Equipe() {
               </Select>
             </div>
           </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span aria-live="polite">{pesquisaPendente ? "Preparando pesquisa..." : `${filtrados.length} colaborador(es) encontrado(s)`}</span>
+            {(busca || situacao !== "todos" || filtroAcesso !== "todos") && (
+              <Button type="button" size="sm" variant="ghost" className="h-8 gap-1.5 text-xs" onClick={limparFiltros}><FilterX className="h-3.5 w-3.5" /> Limpar filtros</Button>
+            )}
+          </div>
           {acessosQuery.isError && (
             <p role="alert" className="text-xs text-destructive">
               Não foi possível consultar os acessos. A lista de colaboradores continua disponível,
@@ -217,9 +239,9 @@ export default function Equipe() {
       </Card>
 
       {carregando ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Carregando equipe...
+        <div className="stat-card space-y-3" role="status" aria-label="Carregando equipe">
+          <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Carregando equipe...</p>
+          {Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-20 w-full" />)}
         </div>
       ) : erro ? (
         <Card className="border-destructive/40 bg-destructive/5">
@@ -238,7 +260,7 @@ export default function Equipe() {
             </CardContent></Card>
           )}
 
-          {filtrados.map((c) => {
+          {colaboradoresExibidos.map((c) => {
             const acessosDoColaborador = acessosPorColaborador.get(c.id_colaborador) ?? [];
             return (
               <Card key={c.id_colaborador}>
@@ -335,6 +357,13 @@ export default function Equipe() {
               </Card>
             );
           })}
+          {temMaisColaboradores && (
+            <div className="flex justify-center pt-3">
+              <Button type="button" variant="outline" onClick={() => setItensVisiveis((n) => n + ITENS_POR_LOTE)} className="w-full sm:w-auto">
+                Exibir mais colaboradores ({colaboradoresExibidos.length} de {filtrados.length})
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
