@@ -29,7 +29,8 @@ function permitido(permissoes: Permissao[], modulo: string, acao: "visualizar" |
   const wildcard = permissoes.find(p => String(p.modulo).toUpperCase() === "*");
   const regra = wildcard ?? permissoes.find(p => String(p.modulo).toUpperCase() === modulo);
   const valor = regra?.[acao];
-  return valor === true || (typeof valor === "string" && ["SIM", "TRUE"].includes(valor.toUpperCase()));
+  const normalizado = String(valor ?? "").trim().toUpperCase();
+  return valor === true || normalizado === "SIM" || normalizado === "TRUE";
 }
 function urlLegacy(): string {
   const raw = process.env.LEGACY_SHEETS_GAS_URL;
