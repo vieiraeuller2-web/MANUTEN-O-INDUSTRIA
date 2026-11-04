@@ -18,7 +18,8 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 
 ## Gate B — Preview [NOVA RC READY; HOMOLOGAÇÃO DOS FLUXOS MIGRADOS PENDENTE]
 - [x] **Nova RC:** `npx vercel` READY; URL `https://manutencao-industria-6ily0hmm5-vieiraeuller2-8287s-projects.vercel.app`; verificado por Vercel como `dpl_HGrKGRrLaBCcMBta7A78tQ6RtjUB`, Preview, SHA `f5d685e3b1a383ccc8dc2e049af290c1bc072a73`.
-- [ ] **Nova RC:** validar consultas reais via ponte `/api/legacy-sheets` (Obras, Notas Fiscais, Serviços Externos e Lubrificação), leitura por perfis permitidos, gravações **somente** com dados sintéticos e autorização; verificar reversibilidade.
+- [x] **Nova RC:** usuário confirmou em 2026-11-04 que as consultas de Histórico de OS, Obras, Lubrificação, Notas Fiscais e Serviços Externos funcionaram no Preview. **Escopo informado:** leitura/navegação em conta autorizada, sem comprovação de mutações ou testes de permissões negativas.
+- [ ] **Nova RC:** testes reais de gravações somente em ambiente/conta de teste e contratos de permissões por perfil (inclusive negações e rollback).
 - [ ] **Nova RC:** validar gravação de OS em ambiente de teste autorizado (não gravar OS de teste na base operacional), sessão, idempotência e confirmação de horímetro.
 - [ ] **Nova RC:** garantir que QR público e fluxo QR de OS não sofreram regressão.
 - [x] Homologação visual de Lançamento de OS declarada pelo usuário em 2026-11-04, sem gravação real (não equivale a teste negativo do backend).
@@ -32,6 +33,7 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 - [ ] **P0** Vercel Production não lista `GAS_WEBAPP_URL` nem `SESSION_COOKIE_SECRET` (aparecem em Preview/Development); configurar/revalidar somente no ambiente correto.
 - [ ] **P0 (corrigido no código, testes simulados aprovados, backend real pendente)**: gravação OS, Obras, consultas/cadastros por `sheets-external` e Lubrificação usam API intermediária. 12 testes novos passaram, mas falta homologação dos contratos reais e bloqueio de bypass direto ao GAS; consultar `docs/RC1_CORRECOES_SEGURANCA_PENDENTES.md`.
 - [ ] **P0** Confirmar código e Script Properties do GAS efetivamente publicado e revogação de sessões.
+- [ ] **P0:** não foi localizado projeto Apps Script executável diretamente pelo Google Drive disponível; arquivos encontrados são documentação/pacotes de referência, não comprovam código implantado. Necessária inspeção read-only do editor/deployment real antes de qualquer atualização.
 - [ ] Auditar o GAS efetivamente publicado: `doGet`/`doPost`, Shadow 6.3A, enforcement 6.3B e versão das rotas
 - [ ] Confirmar por telemetria real que todas as actions protegidas são mapeadas e recebem `session_token`
 - [ ] Confirmar exceções intencionais de rotas públicas, QR, relatórios públicos e integrações servidor-servidor
