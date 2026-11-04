@@ -63,3 +63,9 @@ export function filtrarEquipe(
     ].some((campo) => normalizarBusca(campo).includes(termo));
   });
 }
+
+/** Mantém os filtros sobre toda a equipe, exibindo apenas o lote visível no DOM. */
+export function limitarEquipeVisivel<T>(items: T[], limite: number): T[] {
+  if (!Number.isFinite(limite) || limite <= 0) return [];
+  return items.slice(0, Math.floor(limite));
+}
