@@ -25,7 +25,7 @@ const ORIGEM_GAS = "https://script.google.com";
 function recursoValido(valor: unknown): valor is Recurso {
   return typeof valor === "string" && Object.prototype.hasOwnProperty.call(RECURSOS, valor);
 }
-function permitido(permissoes: Permissao[], modulo: string, acao: "visualizar" | "criar"): boolean {
+function permitido(permissoes: Permissao[], modulo: string, acao: "visualizar" | "criar" | "editar"): boolean {
   const wildcard = permissoes.find(p => String(p.modulo).toUpperCase() === "*");
   const regra = wildcard ?? permissoes.find(p => String(p.modulo).toUpperCase() === modulo);
   const valor = regra?.[acao];
@@ -58,9 +58,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, message: "Planilha não permitida" });
   }
   const creating = req.method === "POST";
-  if (creating && (!PODE_CRIAR.has(sheet) || req.body?.action !== "create" ||
+  const obraAction = creating && sheet === "obras" &&
+    ["registrar_obra", "iniciar_obra", "concluir_obra"].includes(String(req.body?.action ?? ""));
+  if (creating && !obraAction && (!PODE_CRIAR.has(sheet) || req.body?.action !== "create" ||
       !req.body?.data || typeof req.body.data !== "object" || Array.isArray(req.body.data))) {
     return res.status(403).json({ success: false, message: "Operação não permitida" });
+  }
+  if (obraAction && (!req.body?.payload || typeof req.body.payload !== "object" ||
+    Array.isArray(req.body.payload) || req.body.payload.action !== req.body.action ||
+    Object.prototype.hasOwnProperty.call(req.body.payload, "token") ||
+    Object.prototype.hasOwnProperty.call(req.body.payload, "session_token"))) {
+    return res.status(403).json({ success: false, message: "Payload de obra não permitido" });
   }
 
   const cookieValue = getSessionFromCookies(req.headers.cookie ?? null);
@@ -85,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const permissoes = Array.isArray(auth.permissoes)
       ? auth.permissoes as Permissao[]
       : Array.isArray(usuario.permissoes) ? usuario.permissoes as Permissao[] : [];
-    if (!permitido(permissoes, RECURSOS[sheet], creating ? "criar" : "visualizar")) {
+    if (!permitido(permissoes, RECURSOS[sheet], creating ? obraAction && req.body.action !== "registrar_obra" ? "editar" : "criar" : "visualizar")) {
       return res.status(403).json({ success: false, message: "Sem permissão" });
     }
     const destino = urlLegacy();
@@ -96,7 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (creating) {
         upstream = await fetch(destino, {
           method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "create", sheet, data: req.body.data }),
+          body: JSON.stringify(obraAction ? req.body.payload : { action: "create", sheet, data: req.body.data }),
           redirect: "follow", signal: controller.signal,
         });
       } else {
