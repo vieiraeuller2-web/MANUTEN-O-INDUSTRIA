@@ -1,5 +1,6 @@
 import { memo, useCallback, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type HTMLAttributes } from "react";
 import { Link } from "react-router-dom";
+import "./NovaOS.css";
 import PageHeader from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/hooks/use-toast";
-import { AlertCircle, Check, CheckCircle2, ChevronsUpDown, History, Loader2, RotateCcw, Save } from "lucide-react";
+import { AlertCircle, CalendarClock, Check, CheckCircle2, ChevronsUpDown, ClipboardList, History, Loader2, RotateCcw, Save, Wrench } from "lucide-react";
 import { useFormOptionsOS } from "@/hooks/use-form-options-os";
 import { useSavePaginatedOS } from "@/hooks/use-paginated-os";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +17,8 @@ import { cn } from "@/lib/utils";
 import ResponsavelField from "@/components/ResponsavelField";
 import { useEquipeColaboradores } from "@/hooks/use-equipe";
 import { combinarResponsaveis } from "@/lib/responsaveis-os";
+import { periodoOSManualValido } from "@/lib/tecnico-os-validation";
+import { canAccessRoute } from "@/lib/authz";
 
 interface FormData {
   equipamento: string;
@@ -122,8 +125,10 @@ function validate(form: FormData, options: SelectOptions): FormErrors {
     errors.tipo = "Selecione um tipo da lista";
   }
 
-  if (form.dataConclusao && form.data_inicio && form.dataConclusao < form.data_inicio) {
-    errors.dataConclusao = "A data final não pode ser anterior";
+  if (form.data_inicio && form.hora_inicio && form.dataConclusao && form.horaConclusao &&
+    !periodoOSManualValido(form.data_inicio, form.hora_inicio, form.dataConclusao, form.horaConclusao)) {
+    errors.dataConclusao = "Confira as datas e os horários de início e conclusão.";
+    errors.horaConclusao = "A conclusão não pode ocorrer antes do início.";
   }
 
   return errors;
@@ -342,8 +347,9 @@ export default function NovaOS() {
   const userId = user?.login || "guest";
   const unidade = user?.unidade || "";
 
-  const { data: optionsData, isLoading: isLoadingOptions } = useFormOptionsOS();
-  const { data: equipeData } = useEquipeColaboradores();
+  const { data: optionsData, isLoading: isLoadingOptions, isError: optionsError, refetch: recarregarOpcoes } = useFormOptionsOS();
+  const { data: equipeData } = useEquipeColaboradores({ enabled: canAccessRoute(user, "/equipe") });
+  const podeVerHistorico = canAccessRoute(user, "/os");
   const mutation = useSavePaginatedOS(userId, unidade, {});
 
   const [form, setForm] = useState<FormData>(() => initialForm());
@@ -402,6 +408,11 @@ export default function NovaOS() {
         horimetro: String(nativeForm.get("horimetro") ?? form.horimetro).trim(),
       };
 
+      if (!optionsData || optionsError || isLoadingOptions) {
+        toast({ title: "Opções oficiais indisponíveis", description: "Recarregue as listas antes de tentar salvar a OS.", variant: "destructive" });
+        return;
+      }
+
       const nextErrors = validate(submittedForm, options);
       setErrors(nextErrors);
       const firstError = Object.values(nextErrors)[0];
@@ -446,18 +457,20 @@ export default function NovaOS() {
         },
       );
     },
-    [form, mutation, options],
+    [form, mutation, options, optionsData, optionsError, isLoadingOptions],
   );
 
   return (
-    <div className="page-container">
-      <div className="flex items-start justify-between gap-3 mb-2">
+    <div className="page-container kron-nova-os">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <PageHeader title="Lançamento rápido de OS" subtitle="Registro de serviço já realizado" />
-        <Button asChild size="sm" variant="outline" className="gap-2 shrink-0">
-          <Link to="/os">
-            <History className="h-4 w-4" /> Histórico
-          </Link>
-        </Button>
+        {podeVerHistorico && (
+          <Button asChild size="sm" variant="outline" className="gap-2 shrink-0">
+            <Link to="/os">
+              <History className="h-4 w-4" /> Histórico
+            </Link>
+          </Button>
+        )}
       </div>
 
       {saved && (
@@ -467,8 +480,20 @@ export default function NovaOS() {
         </div>
       )}
 
+      {optionsError && (
+        <div role="alert" className="mb-4 flex flex-col gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex items-start gap-2"><AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
+            Não foi possível carregar as listas oficiais. O envio está bloqueado até a consulta funcionar.</span>
+          <Button type="button" variant="outline" size="sm" onClick={() => void recarregarOpcoes()}>Recarregar opções</Button>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="stat-card space-y-4 relative">
+          <div className="kron-nova-os__section-title">
+            <span className="kron-nova-os__section-icon"><Wrench className="h-5 w-5" aria-hidden="true"/></span>
+            <div><h2 className="text-sm font-semibold">Identificação do serviço</h2><p className="text-xs text-muted-foreground">Selecione os dados oficiais do equipamento e informe o responsável.</p></div>
+          </div>
           {isLoadingOptions && (
             <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center rounded-lg">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -542,6 +567,10 @@ export default function NovaOS() {
             />
           </div>
 
+          <div className="kron-nova-os__section-title kron-nova-os__section-title--secondary">
+            <span className="kron-nova-os__section-icon"><CalendarClock className="h-5 w-5" aria-hidden="true"/></span>
+            <div><h2 className="text-sm font-semibold">Período de execução</h2><p className="text-xs text-muted-foreground">A conclusão deve ser igual ou posterior ao início.</p></div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <TextField
               label="Data Início"
@@ -582,7 +611,11 @@ export default function NovaOS() {
           </div>
         </div>
 
-        <div className="stat-card">
+        <div className="stat-card space-y-3">
+          <div className="kron-nova-os__section-title">
+            <span className="kron-nova-os__section-icon"><ClipboardList className="h-5 w-5" aria-hidden="true"/></span>
+            <div><h2 className="text-sm font-semibold">Descrição do trabalho</h2><p className="text-xs text-muted-foreground">Registre o serviço executado e as observações relevantes.</p></div>
+          </div>
           <TextAreaField label="Observações" field="observacoes" value={form.observacoes} error={errors.observacoes} onChange={setField} required rows={6} />
         </div>
 
@@ -590,7 +623,7 @@ export default function NovaOS() {
           <Button type="button" variant="outline" className="sm:w-52 gap-2" onClick={resetForm} disabled={mutation.isPending}>
             <RotateCcw className="h-4 w-4" /> Limpar formulário
           </Button>
-          <Button type="submit" className="flex-1 gap-2" disabled={mutation.isPending || isLoadingOptions}>
+          <Button type="submit" className="flex-1 gap-2" disabled={mutation.isPending || isLoadingOptions || optionsError || !optionsData}>
             {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Salvar registro
           </Button>
