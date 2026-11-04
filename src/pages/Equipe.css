@@ -1,0 +1,10 @@
+/* Módulo Equipe — painéis e cards progressivos com hierarquia visual KRON. */
+.kron-equipe .kron-equipe__filters{position:relative;overflow:hidden;border-radius:16px;box-shadow:0 14px 36px -32px rgba(0,0,0,.65)}
+.kron-equipe__filters:before{content:"";position:absolute;top:0;left:18px;right:18px;height:2px;background:linear-gradient(90deg,hsl(var(--primary)),transparent 78%)}
+.kron-equipe__filters .grid:first-child > div{min-width:0;padding:10px 12px;border:1px solid hsl(var(--border)/.7);background:hsl(var(--muted)/.20);border-radius:11px}
+.kron-equipe__filters .grid:first-child p.text-lg{font-size:24px;line-height:1.25;font-weight:800;margin-top:5px}
+.kron-equipe input:focus-visible{outline-offset:1px}
+.kron-equipe > .space-y-3 > [data-card]{transition:border-color .15s,box-shadow .15s}
+.kron-equipe > .space-y-3 > [data-card]:focus-within{border-color:hsl(var(--primary)/.35)}
+@media(max-width:639px){.kron-equipe__filters input{font-size:16px}.kron-equipe__filters .grid:first-child > div{padding:9px}}
+@media(prefers-reduced-motion:reduce){.kron-equipe *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
