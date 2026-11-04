@@ -115,9 +115,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!upstream.ok) return res.status(502).json({ success: false, message: "Falha no serviço legado" });
       const payload: unknown = await upstream.json();
       if (creating) {
-        if (!payload || typeof payload !== "object" || Array.isArray(payload) ||
-            ((payload as Record<string, unknown>).success !== true && (payload as Record<string, unknown>).ok !== true)) {
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
           return res.status(502).json({ success: false, message: "Serviço legado não confirmou a gravação" });
+        }
+        const result = payload as Record<string, unknown>;
+        if (result.success === false || result.ok === false || result.error ||
+            (result.success !== true && result.ok !== true)) {
+          return res.status(502).json({ success: false, message: "Serviço legado recusou a gravação" });
         }
         return res.status(200).json({ success: true });
       }
