@@ -14,8 +14,7 @@ import {
 import { formatDataBr } from "@/lib/time-helpers";
 import { safeArray } from "@/lib/data-helpers";
 
-const ENDPOINT =
-  "https://script.google.com/macros/s/AKfycbzz1dTU7HVTScVtb37rxAqSR7X0OQmUiZcfvePwGkWM2LaKx1JRSwcEDKnRPMJBPxS7mw/exec?sheet=lubrificacao";
+import { fetchSheet } from "@/lib/sheets-external";
 
 type Lub = Record<string, any>;
 
@@ -94,11 +93,7 @@ function normalize(it: Lub): NormLub {
 }
 
 async function fetchLubrificacao(): Promise<NormLub[]> {
-  const res = await fetch(ENDPOINT, { method: "GET" });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  const json = await res.json();
-  const data = Array.isArray(json) ? json : (json?.data ?? []);
-  if (!Array.isArray(data)) throw new Error("Resposta inválida");
+  const data = await fetchSheet("lubrificacao");
   return (data as Lub[]).map(normalize);
 }
 
