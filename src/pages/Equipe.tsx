@@ -22,7 +22,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessModule } from "@/lib/authz";
 import type { EquipeColaborador, EquipeAcessoResumo } from "@/lib/equipe-contract";
-import { agruparAcessosPorColaborador, filtrarEquipe, type FiltroAcesso, type FiltroSituacao } from "@/lib/equipe-view";
+import { agruparAcessosPorColaborador, filtrarEquipe, limitarEquipeVisivel, type FiltroAcesso, type FiltroSituacao } from "@/lib/equipe-view";
 
 type FormBase = {
   nome: string;
@@ -88,7 +88,7 @@ export default function Equipe() {
     acesso: filtroAcesso,
     acessoConfirmado: acessosConfirmados,
   }), [buscaAplicada, situacao, filtroAcesso, colaboradores, acessosPorColaborador, acessosConfirmados]);
-  const colaboradoresExibidos = useMemo(() => filtrados.slice(0, itensVisiveis), [filtrados, itensVisiveis]);
+  const colaboradoresExibidos = useMemo(() => limitarEquipeVisivel(filtrados, itensVisiveis), [filtrados, itensVisiveis]);
   const temMaisColaboradores = itensVisiveis < filtrados.length;
   const pesquisaPendente = busca.trim() !== buscaAplicada;
   const limparFiltros = () => { setBusca(""); setSituacao("todos"); setFiltroAcesso("todos"); setItensVisiveis(ITENS_POR_LOTE); };
@@ -252,7 +252,7 @@ export default function Equipe() {
       ) : (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            {filtrados.length} de {colaboradores.length} colaborador(es) exibido(s)
+            {colaboradoresExibidos.length} de {filtrados.length} resultado(s) exibido(s) · {colaboradores.length} colaborador(es) no total
           </p>
           {filtrados.length === 0 && (
             <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">
