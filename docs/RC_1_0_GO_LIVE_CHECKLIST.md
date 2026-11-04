@@ -16,14 +16,18 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 - [ ] Conferir warnings e bundles mais pesados; benchmark real de navegação.
 
 ## Gate B — Preview [PENDENTE]
-- [x] `npx vercel` concluiu com Ready (Preview: https://manutencao-industria-f2dtakwbs-vieiraeuller2-8287s-projects.vercel.app). Confirmar hash do deployment separadamente antes de produção.
-- [ ] Homologar Lançamento de OS sem gravar dados reais (campos, TAG, horários e falha de opções)
-- [ ] Homologar Equipe (busca, filtros, Exibir mais, estados de carregamento)
+- [x] `npx vercel` concluiu com Ready (Preview: https://manutencao-industria-f2dtakwbs-vieiraeuller2-8287s-projects.vercel.app). Deployment confirmado na Vercel: `dpl_Hs4JoGrftUB8mXb5c3RtZJEJWiKx`, SHA `402277f11799d053431b08c69ada203d7a3c4c38`.
+- [x] Homologação visual de Lançamento de OS declarada pelo usuário em 2026-11-04, sem gravação real (não equivale a teste negativo do backend).
+- [x] Homologação visual de Equipe declarada pelo usuário em 2026-11-04 (busca, filtros, Exibir mais e estados).
 - [ ] Conferir desktop/mobile e regressões de Histórico de OS
 - [ ] Matriz de perfis ADM, PCM, GESTAO, TECNICO e teste de acesso negado
 - [ ] Verificar recuperação após indisponibilidade do GAS e respostas inválidas
 
-## Gate C — AUTH62 e Enforcement 6.3B [PENDENTE, NÃO ATIVAR]
+## Gate C — AUTH62 e Enforcement 6.3B [AUDITORIA ESTÁTICA REALIZADA; BLOQUEIOS P0, NÃO ATIVAR]
+- [x] Revisão do código no GitHub e das configurações/metadata da Vercel; ver `docs/AUDITORIA_FINAL_AUTH62_KRON_RC1.md`.
+- [ ] **P0** Vercel Production não lista `GAS_WEBAPP_URL` nem `SESSION_COOKIE_SECRET` (aparecem em Preview/Development); configurar/revalidar somente no ambiente correto.
+- [ ] **P0** Fluxos legados protegidos chamam GAS diretamente (gravação OS, Obras, módulos por `sheets-external`); inventariar e proteger.
+- [ ] **P0** Confirmar código e Script Properties do GAS efetivamente publicado e revogação de sessões.
 - [ ] Auditar o GAS efetivamente publicado: `doGet`/`doPost`, Shadow 6.3A, enforcement 6.3B e versão das rotas
 - [ ] Confirmar por telemetria real que todas as actions protegidas são mapeadas e recebem `session_token`
 - [ ] Confirmar exceções intencionais de rotas públicas, QR, relatórios públicos e integrações servidor-servidor
