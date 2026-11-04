@@ -26,7 +26,7 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 ## Gate C — AUTH62 e Enforcement 6.3B [AUDITORIA ESTÁTICA REALIZADA; BLOQUEIOS P0, NÃO ATIVAR]
 - [x] Revisão do código no GitHub e das configurações/metadata da Vercel; ver `docs/AUDITORIA_FINAL_AUTH62_KRON_RC1.md`.
 - [ ] **P0** Vercel Production não lista `GAS_WEBAPP_URL` nem `SESSION_COOKIE_SECRET` (aparecem em Preview/Development); configurar/revalidar somente no ambiente correto.
-- [ ] **P0** Fluxos legados protegidos chamam GAS diretamente (gravação OS, Obras, módulos por `sheets-external`); inventariar e proteger.
+- [ ] **P0 (parcialmente corrigido em branch, não homologado)**: gravação OS, Obras, consultas/cadastros por `sheets-external` e Lubrificação agora usam API intermediária. Faltam testes e segurança do GAS exposto diretamente; consultar `docs/RC1_CORRECOES_SEGURANCA_PENDENTES.md`.
 - [ ] **P0** Confirmar código e Script Properties do GAS efetivamente publicado e revogação de sessões.
 - [ ] Auditar o GAS efetivamente publicado: `doGet`/`doPost`, Shadow 6.3A, enforcement 6.3B e versão das rotas
 - [ ] Confirmar por telemetria real que todas as actions protegidas são mapeadas e recebem `session_token`
