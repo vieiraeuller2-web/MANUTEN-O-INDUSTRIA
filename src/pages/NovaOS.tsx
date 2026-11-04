@@ -99,7 +99,7 @@ const estaPreenchido = (valor: unknown) =>
   valor !== undefined &&
   String(valor).trim() !== "";
 
-function validate(form: FormData, options: SelectOptions): FormErrors {
+export function validate(form: FormData, options: SelectOptions): FormErrors {
   const errors: FormErrors = {};
 
   REQUIRED_FIELDS.forEach((field) => {
