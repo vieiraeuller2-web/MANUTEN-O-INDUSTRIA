@@ -1,0 +1,12 @@
+/* Lançamento de OS: agrupamento visual, sem alterar o fluxo de gravação. */
+.kron-nova-os .stat-card{border-radius:16px;box-shadow:0 14px 36px -32px rgba(0,0,0,.65)}
+.kron-nova-os .stat-card:first-of-type{border-top:2px solid hsl(var(--primary)/.55)}
+.kron-nova-os__section-title{display:flex;align-items:center;gap:12px;min-width:0;padding-bottom:13px;border-bottom:1px solid hsl(var(--border)/.75)}
+.kron-nova-os__section-title--secondary{margin-top:7px}
+.kron-nova-os__section-icon{display:grid;place-items:center;width:38px;height:38px;flex-shrink:0;border-radius:10px;background:hsl(var(--primary)/.095);color:hsl(var(--primary))}
+.kron-nova-os__section-title>div{min-width:0}
+.kron-nova-os__section-title h2{letter-spacing:-.01em}
+.kron-nova-os__section-title p{margin-top:3px;line-height:1.5}
+.kron-nova-os textarea{min-height:130px;resize:vertical}
+.kron-nova-os input:focus-visible,.kron-nova-os textarea:focus-visible{outline-offset:1px}
+@media(max-width:640px){.kron-nova-os .stat-card{padding:15px}.kron-nova-os__section-title{align-items:flex-start}.kron-nova-os__section-icon{width:34px;height:34px}}
