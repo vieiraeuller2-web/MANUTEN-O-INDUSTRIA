@@ -2,8 +2,6 @@ import { fetchSheet, formatSheetDate, getField, type SheetRow } from "@/lib/shee
 import { normalizeText, safeArray, safeString } from "@/lib/data-helpers";
 
 export const OBRAS_SHEET = "obras";
-export const OBRAS_API_URL =
-  "https://script.google.com/macros/s/AKfycbzz1dTU7HVTScVtb37rxAqSR7X0OQmUiZcfvePwGkWM2LaKx1JRSwcEDKnRPMJBPxS7mw/exec";
 
 export type ObraStatus = "PROGRAMADA" | "EM ANDAMENTO" | "CONCLUIDA" | "CANCELADA";
 export type ObraPrioridade = "BAIXA" | "NORMAL" | "ALTA" | "URGENTE";
@@ -193,12 +191,15 @@ export async function fetchObras(): Promise<Obra[]> {
 }
 
 export async function postObraAction(payload: ObraActionPayload): Promise<void> {
-  const res = await fetch(OBRAS_API_URL, {
+  const action = payload.action;
+  if (!["registrar_obra", "iniciar_obra", "concluir_obra"].includes(String(action ?? ""))) {
+    throw new Error("Ação de obra não permitida.");
+  }
+  const res = await fetch("/api/legacy-sheets", {
     method: "POST",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8",
-    },
-    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ sheet: "obras", action, payload }),
   });
 
   const text = await res.text();
