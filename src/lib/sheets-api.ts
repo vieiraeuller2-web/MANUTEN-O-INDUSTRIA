@@ -4,11 +4,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { normalizarHoraSheets } from "@/lib/time-helpers";
+import { apiProxy } from "@/lib/api-client";
 
 const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 const FN_URL = `https://${PROJECT_ID}.supabase.co/functions/v1/sheets-proxy`;
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbzz1dTU7HVTScVtb37rxAqSR7X0OQmUiZcfvePwGkWM2LaKx1JRSwcEDKnRPMJBPxS7mw/exec";
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 async function authHeaders() {
@@ -457,27 +456,9 @@ export async function createOSInSheet(formData: SaveOSFormData) {
     throw new Error("Campos obrigatórios faltando no formulário: " + faltando.join(", "));
   }
 
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8"
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const text = await response.text();
-
-  let data: Record<string, any>;
-  try {
-    data = JSON.parse(text);
-  } catch (error) {
-    console.error("Resposta inválida do Apps Script:", text);
-    throw new Error("Resposta inválida do servidor.");
-  }
-
-  if (data.success !== true) {
-    throw new Error(data.message || "Erro ao salvar registro.");
-  }
+  // A gravação precisa passar pelo cookie HttpOnly e pela whitelist da Vercel.
+  // O Apps Script continua sendo a autoridade final sobre a permissão LANCAMENTO/CRIAR.
+  const data = await apiProxy<Record<string, any>>("registrar_os", payload);
 
   const confirmedHorimeter = getConfirmedHorimeter(data);
   if (confirmedHorimeter !== undefined) {
