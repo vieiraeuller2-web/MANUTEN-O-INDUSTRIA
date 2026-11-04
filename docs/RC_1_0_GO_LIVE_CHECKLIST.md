@@ -8,15 +8,15 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 - Preview deve ser gerado somente após testes locais.
 - Não promover a `main`/produção nem ativar Enforcement 6.3B sem autorização explícita.
 
-## Gate A — Qualidade local [PENDENTE]
-- [ ] `git pull --ff-only`
-- [ ] `npm test` 100% aprovado
-- [ ] `npx tsc --noEmit` sem erros
-- [ ] `npm run build` concluído
+## Gate A — Qualidade local [TESTES E BUILD APROVADOS; BENCHMARK PENDENTE]
+- [x] `git pull --ff-only` (log recebido: atualização 7aa6356 → 402277f)
+- [x] `npm test` 100% aprovado (153/153 testes, 32/32 arquivos; log de 2026-11-04)
+- [x] `npx tsc --noEmit` sem erros (log local)
+- [x] `npm run build` concluído (Vite, 3032 módulos; 35,68 s)
 - [ ] Conferir warnings e bundles mais pesados; benchmark real de navegação.
 
 ## Gate B — Preview [PENDENTE]
-- [ ] `npx vercel`, confirmar URL e commit implantado
+- [x] `npx vercel` concluiu com Ready (Preview: https://manutencao-industria-f2dtakwbs-vieiraeuller2-8287s-projects.vercel.app). Confirmar hash do deployment separadamente antes de produção.
 - [ ] Homologar Lançamento de OS sem gravar dados reais (campos, TAG, horários e falha de opções)
 - [ ] Homologar Equipe (busca, filtros, Exibir mais, estados de carregamento)
 - [ ] Conferir desktop/mobile e regressões de Histórico de OS
@@ -49,4 +49,4 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 
 Referências: memorial histórico `MEMORIAL_COMPLETO_CONTROLE_MANUTENCAO_INDUSTRIAL_20260924.md`, seção 17; `docs/PLANO_INTEGRACAO_API.md`; `docs/auth62-revogacao-homologacao.md`.
 
-Este arquivo é um plano de gates; **não confirma** que qualquer gate esteja aprovado, que o GAS publicado tenha a mesma versão do arquivo histórico ou que a versão 1.0 esteja pronta.
+Este arquivo registra somente os gates comprovados por logs recebidos. Testes locais e Preview Ready não substituem homologação visual, smoke tests reais nem auditoria do GAS publicado. O KRON 1.0 ainda não está aprovado para produção.
