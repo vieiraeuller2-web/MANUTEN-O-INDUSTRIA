@@ -4,19 +4,23 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 
 ## Referência de código
 - Branch: `feat/tecnico-mobile-equipe`
-- Commit-base do candidato: `402277f11799d053431b08c69ada203d7a3c4c38`
+- Commit-base original do candidato visual: `402277f11799d053431b08c69ada203d7a3c4c38`
+- **Nova RC com correções da ponte legada:** `f5d685e3b1a383ccc8dc2e049af290c1bc072a73` (Preview verificado pela Vercel em 2026-11-04)
 - Preview deve ser gerado somente após testes locais.
 - Não promover a `main`/produção nem ativar Enforcement 6.3B sem autorização explícita.
 
 ## Gate A — Qualidade local [TESTES E BUILD APROVADOS; BENCHMARK PENDENTE]
-- [x] `git pull --ff-only` (log recebido: atualização 7aa6356 → 402277f)
-- [x] `npm test` 100% aprovado (153/153 testes, 32/32 arquivos; log de 2026-11-04)
+- [x] `git pull --ff-only` (log local: atualização `402277f` → `f5d685e`, fast-forward)
+- [x] `npm test` 100% aprovado (**165/165 testes, 34/34 arquivos**; log local de 2026-11-04)
 - [x] `npx tsc --noEmit` sem erros (log local)
-- [x] `npm run build` concluído (Vite, 3032 módulos; 35,68 s)
+- [x] `npm run build` concluído (Vite, **3032 módulos; 32,42 s**; log local de 2026-11-04)
 - [ ] Conferir warnings e bundles mais pesados; benchmark real de navegação.
 
-## Gate B — Preview [PENDENTE]
-- [x] `npx vercel` concluiu com Ready (Preview: https://manutencao-industria-f2dtakwbs-vieiraeuller2-8287s-projects.vercel.app). Deployment confirmado na Vercel: `dpl_Hs4JoGrftUB8mXb5c3RtZJEJWiKx`, SHA `402277f11799d053431b08c69ada203d7a3c4c38`.
+## Gate B — Preview [NOVA RC READY; HOMOLOGAÇÃO DOS FLUXOS MIGRADOS PENDENTE]
+- [x] **Nova RC:** `npx vercel` READY; URL `https://manutencao-industria-6ily0hmm5-vieiraeuller2-8287s-projects.vercel.app`; verificado por Vercel como `dpl_HGrKGRrLaBCcMBta7A78tQ6RtjUB`, Preview, SHA `f5d685e3b1a383ccc8dc2e049af290c1bc072a73`.
+- [ ] **Nova RC:** validar consultas reais via ponte `/api/legacy-sheets` (Obras, Notas Fiscais, Serviços Externos e Lubrificação), leitura por perfis permitidos, gravações **somente** com dados sintéticos e autorização; verificar reversibilidade.
+- [ ] **Nova RC:** validar gravação de OS em ambiente de teste autorizado (não gravar OS de teste na base operacional), sessão, idempotência e confirmação de horímetro.
+- [ ] **Nova RC:** garantir que QR público e fluxo QR de OS não sofreram regressão.
 - [x] Homologação visual de Lançamento de OS declarada pelo usuário em 2026-11-04, sem gravação real (não equivale a teste negativo do backend).
 - [x] Homologação visual de Equipe declarada pelo usuário em 2026-11-04 (busca, filtros, Exibir mais e estados).
 - [ ] Conferir desktop/mobile e regressões de Histórico de OS
@@ -26,7 +30,7 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 ## Gate C — AUTH62 e Enforcement 6.3B [AUDITORIA ESTÁTICA REALIZADA; BLOQUEIOS P0, NÃO ATIVAR]
 - [x] Revisão do código no GitHub e das configurações/metadata da Vercel; ver `docs/AUDITORIA_FINAL_AUTH62_KRON_RC1.md`.
 - [ ] **P0** Vercel Production não lista `GAS_WEBAPP_URL` nem `SESSION_COOKIE_SECRET` (aparecem em Preview/Development); configurar/revalidar somente no ambiente correto.
-- [ ] **P0 (parcialmente corrigido em branch, não homologado)**: gravação OS, Obras, consultas/cadastros por `sheets-external` e Lubrificação agora usam API intermediária. Faltam testes e segurança do GAS exposto diretamente; consultar `docs/RC1_CORRECOES_SEGURANCA_PENDENTES.md`.
+- [ ] **P0 (corrigido no código, testes simulados aprovados, backend real pendente)**: gravação OS, Obras, consultas/cadastros por `sheets-external` e Lubrificação usam API intermediária. 12 testes novos passaram, mas falta homologação dos contratos reais e bloqueio de bypass direto ao GAS; consultar `docs/RC1_CORRECOES_SEGURANCA_PENDENTES.md`.
 - [ ] **P0** Confirmar código e Script Properties do GAS efetivamente publicado e revogação de sessões.
 - [ ] Auditar o GAS efetivamente publicado: `doGet`/`doPost`, Shadow 6.3A, enforcement 6.3B e versão das rotas
 - [ ] Confirmar por telemetria real que todas as actions protegidas são mapeadas e recebem `session_token`
