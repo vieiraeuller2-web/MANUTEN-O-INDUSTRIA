@@ -1,32 +1,25 @@
-// Cliente genérico para a API do Google Apps Script (multi-abas)
-// Endpoint único; aba é definida pelo parâmetro `sheet`.
-
-const BASE =
-  "https://script.google.com/macros/s/AKfycbzz1dTU7HVTScVtb37rxAqSR7X0OQmUiZcfvePwGkWM2LaKx1JRSwcEDKnRPMJBPxS7mw/exec";
+// Cliente de planilhas legadas por API autenticada da Vercel.
+// Nenhum endpoint direto do Apps Script é exposto aqui.
 
 export type SheetRow = Record<string, string | number | null | undefined>;
 
 export async function fetchSheet(sheet: string): Promise<SheetRow[]> {
-  const res = await fetch(`${BASE}?sheet=${encodeURIComponent(sheet)}`, { method: "GET" });
-  if (!res.ok) throw new Error("HTTP " + res.status);
+  const res = await fetch(`/api/legacy-sheets?sheet=${encodeURIComponent(sheet)}`, {
+    method: "GET", credentials: "include", cache: "no-store",
+  });
   const json = await res.json();
-  if (json?.success === false) throw new Error(json?.error || "Resposta inválida");
-  const data = Array.isArray(json) ? json : (json?.data ?? []);
-  if (!Array.isArray(data)) throw new Error("Resposta inválida");
-  return data as SheetRow[];
+  if (!res.ok || json?.success !== true) throw new Error(json?.message || "Falha na consulta da planilha");
+  if (!Array.isArray(json.data)) throw new Error("Resposta inválida");
+  return json.data as SheetRow[];
 }
 
 export async function createSheetRow(sheet: string, data: SheetRow): Promise<void> {
-  const body = JSON.stringify({ sheet, action: "create", data });
-  // text/plain evita preflight CORS no Apps Script
-  const res = await fetch(BASE, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body,
+  const res = await fetch("/api/legacy-sheets", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    credentials: "include", body: JSON.stringify({ sheet, action: "create", data }),
   });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  const json = await res.json().catch(() => ({}));
-  if (json?.success === false) throw new Error(json?.error || "Falha ao cadastrar.");
+  const json = await res.json();
+  if (!res.ok || json?.success !== true) throw new Error(json?.message || "Falha ao cadastrar");
 }
 
 export function getField(item: SheetRow, ...keys: string[]): string {
