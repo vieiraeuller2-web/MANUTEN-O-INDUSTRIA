@@ -85,8 +85,9 @@ export default async function handler(
     const { token: _token, session_token: _st, ...safeResponse } = gasResponse as Record<string, unknown>;
 
     return res.status(gasResponse.success ? 200 : 400).json(safeResponse);
-  } catch (err) {
-    console.error("[proxy] Erro:", err);
+  } catch {
+    // Nunca registre o erro bruto: mensagens de fetch podem incluir URL com token.
+    console.error("[proxy] Falha ao comunicar com o backend");
     return res.status(500).json({
       success: false,
       message: "Erro ao comunicar com o backend",
