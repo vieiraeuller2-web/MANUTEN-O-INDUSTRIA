@@ -36,7 +36,9 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 - [x] Vercel Production ainda não lista `GAS_WEBAPP_URL`, `SESSION_COOKIE_SECRET` ou `LEGACY_SHEETS_GAS_URL`; nenhum segredo foi lido, copiado ou configurado.
 - [x] `api/proxy.ts`: erro bruto de fetch (potencialmente com URL de token) não é mais registrado. Novo teste de regressão em `src/test/auth62-revogacao-integracao.test.ts`; **alterações ainda aguardam execução de testes e novo Preview**.
 - [ ] Executar `npm test`, `npx tsc --noEmit` e `npm run build` depois do pull, sem publicar Production.
-- [ ] Acesso read-only ao editor do GAS **de fato implantado**: localizar ID do projeto, versões e configuração 6.3A/6.3B sem alterar propriedades.
+- [x] Identificar projeto GAS candidato via link enviado: Google Drive confirmou o nome **INDUSTRIA**, MIME `application/vnd.google-apps.script`, Script ID `1KeJfc3EnVuUvS9kVZd5YZSh98akbr96INxWuEIBmk-0wYcF7VRbiaUT9`. Isso **não comprova** que é a implantação usada por Vercel/QR.
+- [ ] **Código do GAS INDUSTRIA ainda indisponível:** leitura via Drive retornou 403; obter exportação read-only via `clasp clone-script` com conta autorizada ou acesso via Work/Cloud Browser. Não inserir segredos em notas/GitHub.
+- [ ] Acesso read-only ao código e às implantações do GAS **de fato implantado**: confirmar doGet/doPost, Script Properties (nomes/estados, sem valores sensíveis), versões, mapa 6.3A/6.3B sem alterar propriedades.
 - [ ] Validar a revogação imediata de sessões e divergência `ATIVO` vs `STATUS` em conta de teste; confirmar permissão no GAS legado público.
 - [ ] Configurar variáveis de Production **apenas** depois de confirmar endpoints e política de segredos; stage Production com rollback sob autorização explícita.
 
