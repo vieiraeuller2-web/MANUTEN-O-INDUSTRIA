@@ -28,6 +28,18 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 - [ ] Matriz de perfis ADM, PCM, GESTAO, TECNICO e teste de acesso negado
 - [ ] Verificar recuperação após indisponibilidade do GAS e respostas inválidas
 
+## Retomada de 2026-11-25 — inspeção de estado e hardening sem deploy
+
+- [x] Memória Obsidian lida: `JARVIS/JARVIS_BRAIN/10_PROJECTS/CONTROLE_MANUTENCAO_INDUSTRIAL/SESSIONS/KRON_MEMORIA_CONTINUIDADE_2026-11-04.md`.
+- [x] GitHub confirmado antes das novas alterações: branch `feat/tecnico-mobile-equipe` em `6cbc423`, `main` ainda em `8364fe5`; produção não foi alterada nesta retomada.
+- [x] Vercel Preview existente continua `READY`, `dpl_HGrKGRrLaBCcMBta7A78tQ6RtjUB`, SHA `f5d685e`.
+- [x] Vercel Production ainda não lista `GAS_WEBAPP_URL`, `SESSION_COOKIE_SECRET` ou `LEGACY_SHEETS_GAS_URL`; nenhum segredo foi lido, copiado ou configurado.
+- [x] `api/proxy.ts`: erro bruto de fetch (potencialmente com URL de token) não é mais registrado. Novo teste de regressão em `src/test/auth62-revogacao-integracao.test.ts`; **alterações ainda aguardam execução de testes e novo Preview**.
+- [ ] Executar `npm test`, `npx tsc --noEmit` e `npm run build` depois do pull, sem publicar Production.
+- [ ] Acesso read-only ao editor do GAS **de fato implantado**: localizar ID do projeto, versões e configuração 6.3A/6.3B sem alterar propriedades.
+- [ ] Validar a revogação imediata de sessões e divergência `ATIVO` vs `STATUS` em conta de teste; confirmar permissão no GAS legado público.
+- [ ] Configurar variáveis de Production **apenas** depois de confirmar endpoints e política de segredos; stage Production com rollback sob autorização explícita.
+
 ## Gate C — AUTH62 e Enforcement 6.3B [AUDITORIA ESTÁTICA REALIZADA; BLOQUEIOS P0, NÃO ATIVAR]
 - [x] Revisão do código no GitHub e das configurações/metadata da Vercel; ver `docs/AUDITORIA_FINAL_AUTH62_KRON_RC1.md`.
 - [ ] **P0** Vercel Production não lista `GAS_WEBAPP_URL` nem `SESSION_COOKIE_SECRET` (aparecem em Preview/Development); configurar/revalidar somente no ambiente correto.
