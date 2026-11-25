@@ -104,6 +104,29 @@ describe("Integração Vercel ↔ AUTH62 — revogação simulada", () => {
     expect(headers.get("Set-Cookie")).toContain("Max-Age=0");
   });
 
+  it("não registra URL ou token de sessão no log quando GAS lança erro", async () => {
+    const segredo = "token-secreto-de-teste-que-nao-pode-vazar";
+    vi.mocked(callGAS).mockRejectedValue(
+      new Error(`Falha fetch https://script.google.com/macros/s/teste/exec?token=${segredo}`),
+    );
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const { res, state } = mockResponse();
+      await proxyHandler(request("POST", { action: "equipe_acessos" }), res);
+      expect(state.status).toBe(500);
+      expect(state.body).toEqual({
+        success: false,
+        message: "Erro ao comunicar com o backend",
+      });
+      const log = JSON.stringify(spy.mock.calls);
+      expect(log).not.toContain(segredo);
+      expect(log).not.toContain("script.google.com");
+      expect(log).toContain("Falha ao comunicar com o backend");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("não restaura permissões antigas do cookie em sessão autorizada", async () => {
     vi.mocked(callGAS).mockResolvedValue({
       success: true,
