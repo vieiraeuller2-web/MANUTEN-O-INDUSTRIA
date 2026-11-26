@@ -37,25 +37,27 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 - [x] `api/proxy.ts`: erro bruto de fetch (potencialmente com URL de token) não é mais registrado. Novo teste de regressão em `src/test/auth62-revogacao-integracao.test.ts`; **alterações ainda aguardam execução de testes e novo Preview**.
 - [ ] Executar `npm test`, `npx tsc --noEmit` e `npm run build` depois do pull, sem publicar Production.
 - [x] Identificar projeto GAS candidato via link enviado: Google Drive confirmou o nome **INDUSTRIA**, MIME `application/vnd.google-apps.script`, Script ID `1KeJfc3EnVuUvS9kVZd5YZSh98akbr96INxWuEIBmk-0wYcF7VRbiaUT9`. Isso **não comprova** que é a implantação usada por Vercel/QR.
-- [x] **Clone local confirmado pelo terminal do usuário em 25/11/2026:** `clasp clone-script 1KeJfc3EnVuUvS9kVZd5YZSh98akbr96INxWuEIBmk-0wYcF7VRbiaUT9` baixou **103 arquivos** de HEAD para `INDUSTRIA-KRON/KRON-GAS-AUDITORIA`; `clasp list-deployments` retornou 4 implantações (HEAD, v11, v9, v53). **Os arquivos não foram enviados ao chat e, portanto, ainda NÃO foram inspecionados.**
+- [x] **Clone e auditoria do GAS realizados:** `clasp clone-script` baixou 103 arquivos de HEAD e v53; usuário conferiu hashes de cada arquivo sem diferenças e enviou os dois ZIPs. Auditoria estática consolidada em `AUDITORIA_KRON_AUTH62_GAS_V53_2026-11-26.md` (Obsidian/Drive restrito); **não copiar ZIPs, segredos ou relatório sensível ao GitHub**.
 - [x] **Conferência de identificação:** implantação v53 `AKfycbzz1dTU7HVTScVtb37rxAqSR7X0OQmUiZcfvePwGkWM2LaKx1JRSwcEDKnRPMJBPxS7mw` coincide com a URL legada registrada no KRON. Não presumir que v53 seja o único deployment ativo ou que HEAD seja igual ao publicado.
-- [ ] **Receber os arquivos-fonte sanitizados de HEAD e da versão 53** (clone em pastas separadas, somente *.js/*.gs e appsscript.json); então auditar AUTH62, Enf. 6.3B, roteamento e bypass. Não inserir segredos em notas/GitHub.
-- [ ] Acesso read-only ao código e às implantações do GAS **de fato implantado**: confirmar doGet/doPost, Script Properties (nomes/estados, sem valores sensíveis), versões, mapa 6.3A/6.3B sem alterar propriedades.
+- [x] **Receber e analisar HEAD/v53:** 103 arquivos comparados, análise estática concluída; sem invocar endpoints operacionais, e sem demonstrar revogação/bypass por testes reais.
+- [x] Acesso read-only a código HEAD/v53 e lista de implantações; usuário confirmou via captura de tela em 26/11/2026 **dois estados das Script Properties**. Outros vínculos de implantação e cenários de segurança reais permanecem pendentes.
 - [ ] Validar a revogação imediata de sessões e divergência `ATIVO` vs `STATUS` em conta de teste; confirmar permissão no GAS legado público.
 - [ ] Configurar variáveis de Production **apenas** depois de confirmar endpoints e política de segredos; stage Production com rollback sob autorização explícita.
 
 ## Gate C — AUTH62 e Enforcement 6.3B [AUDITORIA ESTÁTICA REALIZADA; BLOQUEIOS P0, NÃO ATIVAR]
+- [x] **Estado da configuração visto na tela de Script Properties em 26/11/2026:** `AUTH63B_ENFORCEMENT_ENABLED_V1 = NAO`; `AUTH63B_UNMAPPED_FAIL_CLOSED_V1 = SIM`. Informação confirmada por captura de tela enviada pelo usuário; nenhuma propriedade foi alterada. **O segundo valor não ativa o Enforcement enquanto o primeiro estiver em NAO.**
+- [ ] **Manter Enforcement OFF.** Antes de propor ativação, corrigir rotas não autorizadas e segredos, conferir exceções QR/Telegram e executar testes isolados de autorização/revogação com rollback. **Decisão atual: NO-GO.**
 - [x] Revisão do código no GitHub e das configurações/metadata da Vercel; ver `docs/AUDITORIA_FINAL_AUTH62_KRON_RC1.md`.
 - [ ] **P0** Vercel Production não lista `GAS_WEBAPP_URL` nem `SESSION_COOKIE_SECRET` (aparecem em Preview/Development); configurar/revalidar somente no ambiente correto.
 - [ ] **P0 (corrigido no código, testes simulados aprovados, backend real pendente)**: gravação OS, Obras, consultas/cadastros por `sheets-external` e Lubrificação usam API intermediária. 12 testes novos passaram, mas falta homologação dos contratos reais e bloqueio de bypass direto ao GAS; consultar `docs/RC1_CORRECOES_SEGURANCA_PENDENTES.md`.
-- [ ] **P0** Confirmar código e Script Properties do GAS efetivamente publicado e revogação de sessões.
-- [ ] **P0:** não foi localizado projeto Apps Script executável diretamente pelo Google Drive disponível; arquivos encontrados são documentação/pacotes de referência, não comprovam código implantado. Necessária inspeção read-only do editor/deployment real antes de qualquer atualização.
+- [ ] **P0** Corrigir riscos apontados na auditoria estática do GAS v53 e validar a revogação de sessões; usuário confirmou duas propriedades, mas faltam testes reais e autorizações das rotas protegidas.
+- [x] Projeto Apps Script INDUSTRIA identificado; 103 arquivos de HEAD/v53 exportados e analisados. Drive direto retornava 403; obtenção ocorreu via `clasp`. Isso não comprova a cobertura de outros deployments ou backends legados.
 - [ ] Auditar o GAS efetivamente publicado: `doGet`/`doPost`, Shadow 6.3A, enforcement 6.3B e versão das rotas
 - [ ] Confirmar por telemetria real que todas as actions protegidas são mapeadas e recebem `session_token`
 - [ ] Confirmar exceções intencionais de rotas públicas, QR, relatórios públicos e integrações servidor-servidor
 - [ ] Executar casos negativos: sem token, token expirado/revogado, permissão insuficiente, actions desconhecidas e bypass direto do GAS
 - [ ] Inspecionar diferença `ATIVO`/`STATUS` do AUTH62 e revogação de sessões/caches com conta de teste autorizada
-- [ ] Confirmar `unmapped_fail_closed` e política de logs antes de chamar 6.3B de proteção abrangente
+- [x] Conferir o valor atual de `AUTH63B_UNMAPPED_FAIL_CLOSED_V1` por captura (`SIM`); política de logs, cobertura do mapeamento e exceções ainda exigem auditoria/testes antes de tratar 6.3B como proteção abrangente.
 - [ ] Definir janela controlada, monitoramento de ACCESS_DENIED e rollback das Script Properties
 
 ## Gate D — Publicação [PENDENTE]
@@ -70,7 +72,7 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 - Quando ligado: rotas mapeadas sem token, com token inválido/expirado ou com perfil sem permissão são bloqueadas.
 - Rotas permitidas passam.
 - O desenho original usava **fail-open + log** para rotas não mapeadas enquanto `unmapped_fail_closed=false`; portanto ativar o enforcement **não garante bloquear rotas não mapeadas**.
-- Estado histórico em 2026-09-19: `enforcement_ativo=false`, `unmapped_fail_closed=false`. O estado publicado atual deve ser verificado novamente.
+- Estado histórico em 2026-09-19: `enforcement_ativo=false`, `unmapped_fail_closed=false`. **Estado visto em 26/11/2026 na configuração do projeto INDUSTRIA:** Enforcement `NAO` e `unmapped_fail_closed` `SIM` — não inferir que proteção esteja ativa.
 - Risco observado na telemetria Shadow: chamadas reais sem token; ativação prematura poderia interromper a operação.
 
 Referências: memorial histórico `MEMORIAL_COMPLETO_CONTROLE_MANUTENCAO_INDUSTRIAL_20260924.md`, seção 17; `docs/PLANO_INTEGRACAO_API.md`; `docs/auth62-revogacao-homologacao.md`.
