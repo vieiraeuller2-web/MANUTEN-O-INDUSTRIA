@@ -70,6 +70,16 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 - [ ] Revisar autenticação das outras actions, revogação de sessão, rotação de segredos, compatibilidade do 6.3B com `kron_sheet_read`, contratos de gravação legada e testes em backend separado com dados fictícios.
 - [ ] **NO-GO:** continuar com Enforcement OFF e sem qualquer deploy produtivo; aguardar testes reais e aprovação.
 
+### Telegram / lubrificação — 27/11/2026 (STAGE V2 SOMENTE LOCAL)
+
+- [x] Usuário confirmou que **cadastra** informações pelo bot, sobretudo **lubrificação**, além de NF, serviços e obras. Portanto, **não desabilitar o Telegram produtivo**; stage V1 bloqueou somente a entrada HTTP da cópia offline, não o polling real.
+- [x] Usuário executou `apply_stage.mjs`, `patch_vercel_preview.mjs` e `test_stage.mjs` no PC: **16/16 testes offline aprovados**, Stage GAS gerado (104 arquivos) e Stage Vercel criado; nenhuma publicação.
+- [x] Revisão do V53: `processarTelegramPolling` via `getUpdates` trata lubrificação/horímetros/obras/NF/serviços; a rota HTTP `handleTelegramMessageSafe` cobre menos comandos. **Não inferir qual mecanismo está ativo só por ver código.**
+- [x] Preparado **Stage V2 offline, não implantado**, com guard duplo de usuário e chat para polling, logs Telegram minimizados e prevenção de webhook HTTP direto; **18/18 testes offline** e **104 JS com sintaxe válida**. Pacote privado `KRON_TELEGRAM_STAGE_V2.zip` não foi adicionado ao repositório.
+- [ ] Conferir **Acionadores** do Apps Script para `processarTelegramPolling` e o estado do webhook, sem executar mutações. Identificar canais/grupos autorizados em configuração privada de um projeto GAS de homologação.
+- [ ] **Não publicar V2 sem preparar allowlists** `TELEGRAM_ALLOWED_CHAT_IDS` e `TELEGRAM_ALLOWED_USER_IDS`: por desenho, a ausência delas rejeita TODOS os cadastros. Revalidar bot, cadastros, alertas e rotação de token em ambiente sintético.
+- [ ] Resolver riscos de idempotência/offset em falhas do polling e autorização por perfil antes de alterar produção. Sem mudança no Web App, Production, propriedades ou gatilhos.
+
 ## Gate D — Publicação [PENDENTE]
 - [ ] Backup/tag do estado atualmente publicado e rollback testado
 - [ ] Aprovação explícita da versão e do plano de lançamento
