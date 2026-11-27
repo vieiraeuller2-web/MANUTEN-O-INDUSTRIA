@@ -60,6 +60,16 @@ Estado em 2026-11-04: **CANDIDATO EM HOMOLOGAÇÃO**, não aprovado para produç
 - [x] Conferir o valor atual de `AUTH63B_UNMAPPED_FAIL_CLOSED_V1` por captura (`SIM`); política de logs, cobertura do mapeamento e exceções ainda exigem auditoria/testes antes de tratar 6.3B como proteção abrangente.
 - [ ] Definir janela controlada, monitoramento de ACCESS_DENIED e rollback das Script Properties
 
+### Stage de hardening offline preparado — 27/11/2026 (NÃO PUBLICADO)
+
+- [x] Pacote privado `KRON_HARDENING_STAGE_V1.zip` gerado localmente a partir dos ZIPs fornecidos pelo usuário; contém **apenas patcher/helper/testes/instruções** (não contém as fontes completas ou credenciais do GAS).
+- [x] Stage inclui proposta de guarda AUTH62 para `registrar_os`, leitura por POST privado `kron_sheet_read`, sanitização `LOGS_API`, neutralização dos literais de credenciais e desativação temporária do webhook HTTP Telegram em ambiente de teste.
+- [x] Preparado patch correspondente de `api/legacy-sheets.ts` em **cópia local isolada** para o contrato POST. Nenhum arquivo desse stage foi enviado ao GitHub, nenhum deployment/GAS/Script Property/conta operacional foi alterado.
+- [x] Verificação: **103 arquivos JS sem erro de sintaxe; 16 testes offline com mocks passaram**. **Não representam homologação real**.
+- [ ] Identificar se Telegram usa webhook/polling e quais integrações consomem `?sheet` antes de aplicar; um deploy unilateral quebraria consultas/webhook.
+- [ ] Revisar autenticação das outras actions, revogação de sessão, rotação de segredos, compatibilidade do 6.3B com `kron_sheet_read`, contratos de gravação legada e testes em backend separado com dados fictícios.
+- [ ] **NO-GO:** continuar com Enforcement OFF e sem qualquer deploy produtivo; aguardar testes reais e aprovação.
+
 ## Gate D — Publicação [PENDENTE]
 - [ ] Backup/tag do estado atualmente publicado e rollback testado
 - [ ] Aprovação explícita da versão e do plano de lançamento
